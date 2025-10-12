@@ -1,9 +1,8 @@
 # Ethical Web Load Tester (EWLT) v3.0
-### 🛡️ Military-Grade Security & Anonymity Edition
-
+### Highly advanced tool and poweful for load testing 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Security: Military-Grade](https://img.shields.io/badge/security-military--grade-red.svg)]()
+[![Security: High](https://img.shields.io/badge/security-military--grade-red.svg)]()
 
 ## ⚠️ CRITICAL LEGAL NOTICE
 
