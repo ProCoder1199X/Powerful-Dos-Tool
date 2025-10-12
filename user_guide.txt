@@ -1,0 +1,648 @@
+# EWLT v3.0 - Complete Configuration & Usage Guide
+
+## 📋 Table of Contents
+1. [Quick Start](#quick-start)
+2. [Configuration Files](#configuration-files)
+3. [Attack Modes Explained](#attack-modes-explained)
+4. [Advanced Usage Examples](#advanced-usage-examples)
+5. [Best Practices](#best-practices)
+6. [Troubleshooting](#troubleshooting)
+7. [Performance Tuning](#performance-tuning)
+
+---
+
+## 🚀 Quick Start
+
+### Basic Installation
+```bash
+# Clone repository
+git clone https://github.com/yourusername/ethical-web-load-tester.git
+cd ethical-web-load-tester
+
+# Install (dependencies auto-install on first run)
+python web_load_tester.py --help
+```
+
+### Your First Test
+```bash
+# Test your local development server
+python web_load_tester.py \
+  --target-url http://localhost:8080 \
+  --users 20 \
+  --duration 30 \
+  --dry-run
+
+# If dry-run passes, remove --dry-run to execute
+```
+
+---
+
+## 📁 Configuration Files
+
+### 1. Consent File (consent.json)
+**Required for advanced attack modes**
+
+```json
+{
+  "permission": true,
+  "target_owner": "me",
+  "target_domain": "mysite.com",
+  "test_date": "2025-10-12",
+  "test_purpose": "Performance and security testing",
+  "authorized_by": "Your Name",
+  "contact_email": "you@example.com",
+  "max_duration_seconds": 3600,
+  "allowed_attack_modes": ["flood", "slowloris", "burst", "adaptive"],
+  "notes": "Testing staging environment before production deployment"
+}
+```
+
+**Fields:**
+- `permission`: Must be `true`
+- `target_owner`: Must be `"me"` or `"authorized"`
+- `target_domain`: Domain being tested
+- `test_date`: ISO date of authorization
+- `test_purpose`: Clear explanation of testing goals
+
+### 2. Advanced Config (ewlt_config.json)
+**Optional: Pre-configured test profiles**
+
+```json
+{
+  "version": "3.0",
+  "profiles": {
+    "development": {
+      "target_url": "http://localhost:3000",
+      "users": 10,
+      "spawn_rate": 2,
+      "duration": 60,
+      "attack_mode": "flood",
+      "target_paths": ["/", "/api/health", "/api/users"]
+    },
+    "staging_stress": {
+      "target_url": "https://staging.mysite.com",
+      "users": 200,
+      "spawn_rate": 20,
+      "duration": 300,
+      "attack_mode": "adaptive",
+      "target_paths": ["/", "/products", "/checkout"],
+      "use_tor": false,
+      "enable_fuzzing": false
+    },
+    "production_warmup": {
+      "target_url": "https://mysite.com",
+      "users": 50,
+      "spawn_rate": 5,
+      "duration": 120,
+      "attack_mode": "flood",
+      "target_paths": ["/"],
+      "use_tor": false
+    },
+    "security_audit": {
+      "target_url": "https://test.mysite.com",
+      "users": 100,
+      "spawn_rate": 10,
+      "duration": 600,
+      "attack_mode": "adaptive",
+      "enable_fuzzing": true,
+      "use_tor": true,
+      "identity_rotation": 120,
+      "consent_file": "consent_security_audit.json"
+    }
+  },
+  
+  "tor_settings": {
+    "socks_port": 9050,
+    "control_port": 9051,
+    "exit_nodes": ["us", "gb", "de"],
+    "circuits_per_test": 5
+  },
+  
+  "fuzzing_config": {
+    "categories": ["xss", "sqli", "path_traversal"],
+    "intensity": "medium",
+    "log_responses": true
+  }
+}
+```
+
+**Usage:**
+```bash
+# Load profile from config
+python web_load_tester.py --profile security_audit --config ewlt_config.json
+```
+
+---
+
+## ⚔️ Attack Modes Explained
+
+### 1. FLOOD Mode (Default)
+**Purpose:** High-volume request flooding
+**Use Case:** Test rate limiting, CDN capacity, load balancer distribution
+
+```bash
+python web_load_tester.py \
+  --target-url http://localhost \
+  --users 100 \
+  --attack-mode flood \
+  --duration 120
+```
+
+**Characteristics:**
+- Maximum request throughput
+- Minimal delays between requests
+- Tests raw capacity
+- Simulates sudden traffic spikes
+
+**Metrics to Watch:**
+- Response time degradation
+- Error rate increase
+- Server CPU/memory usage
+
+---
+
+### 2. SLOWLORIS Mode
+**Purpose:** Resource exhaustion via slow connections
+**Use Case:** Test connection timeout handling, max connection limits
+
+```bash
+python web_load_tester.py \
+  --target-url http://localhost \
+  --users 200 \
+  --attack-mode slowloris \
+  --duration 300 \
+  --consent-file consent.json
+```
+
+**Characteristics:**
+- Opens many connections
+- Sends data very slowly
+- Keeps connections alive
+- Exhausts server connection pool
+
+**Countermeasures to Verify:**
+- Connection timeout enforcement
+- Max connections per IP
+- Request timeout limits
+- Reverse proxy protection
+
+---
+
+### 3. BURST Mode
+**Purpose:** Rapid traffic bursts
+**Use Case:** Test cache behavior, burst handling, auto-scaling triggers
+
+```bash
+python web_load_tester.py \
+  --target-url http://localhost \
+  --users 150 \
+  --attack-mode burst \
+  --duration 180
+```
+
+**Characteristics:**
+- 5-15 requests per burst
+- Short pauses between bursts
+- Simulates viral traffic patterns
+- Tests spike capacity
+
+**What to Monitor:**
+- Auto-scaling response time
+- Cache hit ratio changes
+- Queue buildup
+- Load balancer distribution
+
+---
+
+### 4. ADAPTIVE Mode (NEW!)
+**Purpose:** ML-inspired intelligent load adjustment
+**Use Case:** Realistic user behavior, find breaking points gradually
+
+```bash
+python web_load_tester.py \
+  --target-url http://localhost \
+  --users 100 \
+  --attack-mode adaptive \
+  --duration 600
+```
+
+**Characteristics:**
+- Adjusts load based on response times
+- Reduces pressure when server slows
+- Increases load when server is healthy
+- Most realistic human behavior
+
+**Algorithm:**
+- Response < 500ms → Increase load (0.1-0.5s delay)
+- Response 500-2000ms → Normal load (1-3s delay)
+- Response > 2000ms → Decrease load (2-5s delay)
+
+**Best For:**
+- Long-term stability testing
+- Finding gradual degradation points
+- Production-like traffic simulation
+
+---
+
+### 5. RUDY Mode (R-U-Dead-Yet)
+**Purpose:** Slow POST body attacks
+**Use Case:** Test POST timeout handling, upload limits
+
+```bash
+python web_load_tester.py \
+  --target-url http://localhost/api/upload \
+  --users 50 \
+  --attack-mode rudy \
+  --post-data "field=data" \
+  --duration 240 \
+  --consent-file consent.json
+```
+
+**Characteristics:**
+- Sends POST data very slowly
+- Large payloads sent in tiny chunks
+- Ties up server processing
+- Tests upload handling
+
+**Defenses to Check:**
+- Request body timeout
+- Max upload size enforcement
+- Chunked encoding limits
+- Rate limiting on POST endpoints
+
+---
+
+## 🎯 Advanced Usage Examples
+
+### Example 1: Multi-Path Performance Test
+**Scenario:** Test multiple endpoints simultaneously
+
+```bash
+python web_load_tester.py \
+  --target-url https://mysite.com \
+  --target-paths /,/about,/products,/api/search,/api/cart \
+  --users 100 \
+  --spawn-rate 10 \
+  --duration 300 \
+  --attack-mode flood
+```
+
+**Analysis:**
+```bash
+# Check per-endpoint performance in report
+cat ~/.ewlt_reports/report_*.json | jq '.metrics'
+```
+
+---
+
+### Example 2: Authenticated Session Testing
+**Scenario:** Test authenticated endpoints with session cookies
+
+```bash
+# First, get auth token manually, then:
+python web_load_tester.py \
+  --target-url https://mysite.com/dashboard \
+  --users 50 \
+  --post-data "session_token=abc123&user_id=test" \
+  --target-paths /dashboard,/settings,/api/data \
+  --duration 180
+```
+
+**Tips:**
+- Use `--post-data` to send auth tokens
+- Test session expiration behavior
+- Monitor database connection pool
+
+---
+
+### Example 3: Full Anonymity Stack
+**Scenario:** Maximum privacy testing
+
+```bash
+# Step 1: Start VPN (manually)
+# Step 2: Run with full anonymity
+sudo python web_load_tester.py \
+  --target-url https://yoursite.com \
+  --users 100 \
+  --use-tor \
+  --mac-interface wlan0 \
+  --identity-rotation 90 \
+  --check-dns-leak \
+  --attack-mode adaptive \
+  --duration 600
+```
+
+**Privacy Layers:**
+1. **VPN**: Hides real IP from ISP
+2. **Tor**: Adds multi-hop encryption
+3. **MAC Spoofing**: Changes hardware identifier
+4. **Identity Rotation**: Changes Tor circuit every 90s
+5. **DNS Leak Prevention**: DNS through Tor (socks5h)
+
+---
+
+### Example 4: Application Security Fuzzing
+**Scenario:** Test for common web vulnerabilities
+
+```bash
+python web_load_tester.py \
+  --target-url http://testapp.local/login \
+  --users 30 \
+  --attack-mode flood \
+  --enable-fuzzing \
+  --post-data "username=test&password=test123" \
+  --duration 120 \
+  --consent-file consent.json
+```
+
+**Fuzzing Categories Tested:**
+- XSS (Cross-Site Scripting)
+- SQL Injection
+- Path Traversal
+- Command Injection
+- Buffer Overflow
+
+**Review Results:**
+```bash
+# Check for vulnerability indicators
+grep "Potential" ~/.ewlt_logs/ewlt_*.log
+```
+
+---
+
+### Example 5: CDN Cache Effectiveness
+**Scenario:** Verify CDN caching behavior
+
+```bash
+# Test 1: Cold cache (no previous requests)
+python web_load_tester.py \
+  --target-url https://mysite.com/static/large-image.jpg \
+  --users 10 \
+  --duration 60 \
+  --attack-mode flood
+
+# Wait 5 minutes for cache to warm up
+
+# Test 2: Warm cache (CDN should serve from edge)
+python web_load_tester.py \
+  --target-url https://mysite.com/static/large-image.jpg \
+  --users 100 \
+  --duration 60 \
+  --attack-mode flood
+```
+
+**Compare:**
+- Response times (should be much faster)
+- Server load (should be near zero)
+- Cache-Control headers
+
+---
+
+## 📊 Best Practices
+
+### 1. Start Small, Scale Gradually
+```bash
+# Phase 1: Baseline (10 users)
+python web_load_tester.py --target-url http://localhost --users 10 --duration 60
+
+# Phase 2: Light load (50 users)
+python web_load_tester.py --target-url http://localhost --users 50 --duration 120
+
+# Phase 3: Moderate load (100 users)
+python web_load_tester.py --target-url http://localhost --users 100 --duration 180
+
+# Phase 4: Heavy load (200+ users)
+python web_load_tester.py --target-url http://localhost --users 200 --duration 300
+```
+
+### 2. Monitor Server Resources
+**During testing, watch:**
+```bash
+# CPU & Memory
+htop
+
+# Network connections
+netstat -an | grep ESTABLISHED | wc -l
+
+# Disk I/O
+iostat -x 1
+
+# Application logs
+tail -f /var/log/nginx/access.log
+```
+
+### 3. Test in Isolated Environment First
+```bash
+# Use VMs or containers
+docker run -d -p 8080:80 nginx
+python web_load_tester.py --target-url http://localhost:8080 --users 100
+```
+
+### 4. Document Everything
+```bash
+# Create test log
+echo "Test: $(date)" >> test_log.txt
+echo "Purpose: Verify rate limiting" >> test_log.txt
+echo "Command: python web_load_tester.py --target-url ..." >> test_log.txt
+
+# Save results
+cp ~/.ewlt_reports/report_*.json ./test_results/
+```
+
+---
+
+## 🔧 Performance Tuning
+
+### Optimize for High Load Testing
+
+#### 1. System Limits (Linux)
+```bash
+# Increase file descriptors
+ulimit -n 65535
+
+# Add to /etc/security/limits.conf
+* soft nofile 65535
+* hard nofile 65535
+
+# Increase network buffers
+sudo sysctl -w net.core.rmem_max=134217728
+sudo sysctl -w net.core.wmem_max=134217728
+```
+
+#### 2. Locust Performance
+```bash
+# Use multiple worker processes
+python web_load_tester.py \
+  --target-url http://localhost \
+  --users 1000 \
+  --workers 4  # 4 CPU cores
+```
+
+#### 3. Network Optimization
+```bash
+# Disable unnecessary services
+sudo systemctl stop unnecessary-service
+
+# Use wired connection
+# Disable WiFi power management
+sudo iwconfig wlan0 power off
+```
+
+---
+
+## 🛠 Troubleshooting
+
+### Issue 1: "Too many open files"
+**Solution:**
+```bash
+ulimit -n 65535
+# Or reduce --users parameter
+```
+
+### Issue 2: Tor bootstrap fails
+**Solution:**
+```bash
+# Check Tor status
+sudo systemctl status tor
+
+# Restart Tor
+sudo systemctl restart tor
+
+# Check firewall
+sudo ufw allow 9050
+sudo ufw allow 9051
+
+# Wait longer (up to 60s)
+```
+
+### Issue 3: High failure rate (>20%)
+**Causes & Solutions:**
+- **Server overwhelmed**: Reduce `--users` or `--spawn-rate`
+- **Network issues**: Check connectivity, reduce load
+- **Rate limiting active**: Good! Your defenses work
+- **Firewall blocking**: Whitelist test IP
+
+### Issue 4: MAC spoofing fails
+**Solution:**
+```bash
+# Check interface name
+ip link show  # Linux
+ifconfig      # macOS
+
+# Run with sudo
+sudo python web_load_tester.py --mac-interface wlan0 ...
+
+# Disable interface first
+sudo ip link set wlan0 down
+sudo python web_load_tester.py --mac-interface wlan0 ...
+```
+
+### Issue 5: DNS leaks detected
+**Solution:**
+```bash
+# Ensure using socks5h (not socks5)
+# Tool does this automatically with --use-tor
+
+# Verify in logs:
+grep "socks5h" ~/.ewlt_logs/ewlt_*.log
+
+# Test manually:
+curl --socks5-hostname localhost:9050 https://check.torproject.org/api/ip
+```
+
+---
+
+## 📈 Interpreting Results
+
+### Response Time Guidelines
+| Time (ms) | Rating | Action |
+|-----------|--------|--------|
+| 0-100 | Excellent | Continue optimization |
+| 100-300 | Good | Monitor trends |
+| 300-500 | Acceptable | Investigate bottlenecks |
+| 500-1000 | Poor | Optimize immediately |
+| 1000+ | Critical | Major issues present |
+
+### Failure Rate Guidelines
+| Rate (%) | Status | Interpretation |
+|----------|--------|----------------|
+| 0-1 | Excellent | System stable |
+| 1-5 | Good | Acceptable under load |
+| 5-10 | Warning | Approaching limits |
+| 10-20 | Critical | Overloaded |
+| 20+ | Failure | System unstable |
+
+### RPS (Requests Per Second) Benchmarks
+| Application Type | Expected RPS | High Performance |
+|-----------------|--------------|------------------|
+| Static site | 10,000+ | 50,000+ |
+| WordPress | 100-500 | 1,000+ |
+| Django/Flask | 500-2,000 | 5,000+ |
+| Node.js API | 5,000-20,000 | 50,000+ |
+| Go API | 20,000-50,000 | 100,000+ |
+
+---
+
+## 🔒 Security Checklist
+
+Before running tests:
+- [ ] Have written authorization
+- [ ] Using authorized testing environment
+- [ ] Stakeholders notified
+- [ ] Monitoring tools ready
+- [ ] Emergency stop plan prepared
+- [ ] Backup recent data
+- [ ] Test during off-hours
+- [ ] Document test parameters
+- [ ] Review logs after testing
+- [ ] Report findings to security team
+
+---
+
+## 📞 Getting Help
+
+**Logs Location:**
+```bash
+# View latest log
+tail -f ~/.ewlt_logs/ewlt_*.log
+
+# Search for errors
+grep ERROR ~/.ewlt_logs/ewlt_*.log
+```
+
+**Debug Mode:**
+```bash
+# Set logging level
+export EWLT_LOG_LEVEL=DEBUG
+python web_load_tester.py ...
+```
+
+**Community:**
+- GitHub Issues: Report bugs and feature requests
+- Documentation: Full guides in /docs
+- Examples: Sample configs in /examples
+
+---
+
+## 📄 License & Legal
+
+**MIT License** - See LICENSE file
+
+**Legal Notice:**
+This tool is for AUTHORIZED TESTING ONLY. Unauthorized use is illegal under:
+- Computer Fraud and Abuse Act (CFAA) - USA
+- Computer Misuse Act - UK
+- Similar laws worldwide
+
+**Penalties include:**
+- Federal criminal charges
+- Up to 10 years imprisonment
+- Fines up to $250,000
+- Civil liability
+
+**Always obtain written permission before testing any system you don't own.**
+
+---
+
+*EWLT v3.0 - Professional Security Testing Suite*  
+*Educational and Authorized Testing Only*
