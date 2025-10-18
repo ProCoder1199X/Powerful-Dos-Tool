@@ -283,6 +283,10 @@ echo -e "  • Monitor your target server during tests"
 echo -e "  • Have a kill switch ready (Ctrl+C)"
 echo -e "  • Use --dry-run flag to test configuration first"
 echo -e ""
+echo "Installing MQTT, gRPC, and WebSocket dependencies..."
+pip3 install paho-mqtt grpcio grpcio-tools websocket-client
+
+echo "✓ Protocol dependencies installed"
 
 echo -e "${GREEN}Installation log saved to: ./ewlt_setup.log${NC}"
 echo -e "${GREEN}Support: https://github.com/yourusername/ethical-web-load-tester${NC}"

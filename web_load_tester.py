@@ -577,6 +577,79 @@ class UltimateWebsiteUser(FastHttpUser):
                 graphql_url = self.host + '/graphql'
                 ProtocolAttackSimulator.graphql_depth_attack(self.client, graphql_url)
 
+# Add distributed load testing support
+class DistributedCoordinator:
+    """Handles master-worker communication for distributed load testing."""
+    def __init__(self, mode, master_ip=None, port=5557):
+        self.mode = mode
+        self.master_ip = master_ip
+        self.port = port
+        self.socket = None
+
+    def start(self):
+        if self.mode == "master":
+            self._start_master()
+        elif self.mode == "worker":
+            self._start_worker()
+
+    def _start_master(self):
+        """Start master node to coordinate workers."""
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind(("0.0.0.0", self.port))
+        self.socket.listen(5)
+        logger.info(f"Master node listening on port {self.port}")
+        while True:
+            conn, addr = self.socket.accept()
+            logger.info(f"Worker connected: {addr}")
+            threading.Thread(target=self._handle_worker, args=(conn,)).start()
+
+    def _start_worker(self):
+        """Start worker node to receive commands from master."""
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect((self.master_ip, self.port))
+        logger.info(f"Connected to master at {self.master_ip}:{self.port}")
+        while True:
+            data = self.socket.recv(1024).decode()
+            if data:
+                logger.info(f"Received command: {data}")
+                # Execute the received command (e.g., start load test)
+
+    def _handle_worker(self, conn):
+        """Handle communication with a worker."""
+        while True:
+            command = input("Enter command for workers: ")
+            conn.sendall(command.encode())
+
+# Add MQTT, gRPC, and WebSocket support
+class ProtocolTester:
+    """Handles testing for custom protocols like MQTT, gRPC, and WebSocket."""
+    @staticmethod
+    def test_mqtt(broker, topic, message):
+        import paho.mqtt.client as mqtt
+        client = mqtt.Client()
+        client.connect(broker, 1883, 60)
+        client.publish(topic, message)
+        client.disconnect()
+
+    @staticmethod
+    def test_grpc(server, data):
+        import grpc
+        from example_pb2 import Request
+        from example_pb2_grpc import ExampleServiceStub
+        with grpc.insecure_channel(server) as channel:
+            stub = ExampleServiceStub(channel)
+            response = stub.ExampleMethod(Request(data=data))
+            logger.info(f"gRPC response: {response}")
+
+    @staticmethod
+    def test_websocket(ws_url, message):
+        import websocket
+        ws = websocket.create_connection(ws_url)
+        ws.send(message)
+        response = ws.recv()
+        logger.info(f"WebSocket response: {response}")
+        ws.close()
+
 def run_ultimate_test(args):
     """Run the ultimate load test with all features."""
     print(ULTIMATE_BANNER)

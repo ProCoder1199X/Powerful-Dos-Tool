@@ -502,6 +502,20 @@
                         <option value="scraper">Web Scraper</option>
                     </select>
                 </div>
+
+                <div class="control-group">
+                    <label>Distributed Mode 🌐</label>
+                    <select id="distributedMode">
+                        <option value="standalone">Standalone</option>
+                        <option value="master">Master</option>
+                        <option value="worker">Worker</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="masterConfig" style="display: none;">
+                    <label>Master IP</label>
+                    <input type="text" id="masterIp" placeholder="Enter master IP">
+                </div>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
@@ -711,6 +725,28 @@
                 addTerminalLog(`✓ No DNS leaks detected`, 'success');
                 addTerminalLog(`✓ All DNS queries routed through Tor`, 'success');
             }, 2000);
+        }
+
+        // Update distributed mode configuration
+        document.getElementById('distributedMode').addEventListener('change', function () {
+            const mode = this.value;
+            document.getElementById('masterConfig').style.display = mode === 'worker' ? 'block' : 'none';
+        });
+
+        function startDistributedTest() {
+            const mode = document.getElementById('distributedMode').value;
+            const masterIp = document.getElementById('masterIp').value;
+
+            if (mode === 'master') {
+                addTerminalLog('Starting as master node...', 'info');
+                // Start master node logic
+            } else if (mode === 'worker') {
+                addTerminalLog(`Connecting to master at ${masterIp}...`, 'info');
+                // Start worker node logic
+            } else {
+                addTerminalLog('Starting standalone test...', 'info');
+                // Start standalone test logic
+            }
         }
 
         // Initialize
