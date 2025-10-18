@@ -18,7 +18,7 @@ This isn't just a load tester. This is a **complete security research platform**
 - 🎭 **Advanced Evasion** - Anti-WAF techniques that actually work
 - 📊 **Real-Time Analytics** - Live dashboard with matrix rain effects
 - 🌐 **Distributed Testing** - Coordinate attacks from multiple machines
-- ⚡ **Quantum-Ready** - Prepared for post-quantum cryptography era
+
 
 ---
 
