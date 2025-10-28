@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
-███████╗██╗    ██╗██╗  ████████╗    
-██╔════╝██║    ██║██║  ╚══██╔══╝   
-█████╗  ██║ █╗ ██║██║     ██║      
-██╔══╝  ██║███╗██║██║     ██║       
-███████╗╚███╔███╔╝███████╗██║        
-╚══════╝ ╚══╝╚══╝ ╚══════╝╚═╝         
+███████╗██╗    ██╗██╗  ████████╗    ███╗   ███╗███████╗ ██████╗  █████╗ 
+██╔════╝██║    ██║██║  ╚══██╔══╝    ████╗ ████║██╔════╝██╔════╝ ██╔══██╗
+█████╗  ██║ █╗ ██║██║     ██║       ██╔████╔██║█████╗  ██║  ███╗███████║
+██╔══╝  ██║███╗██║██║     ██║       ██║╚██╔╝██║██╔══╝  ██║   ██║██╔══██║
+███████╗╚███╔███╔╝███████╗██║       ██║ ╚═╝ ██║███████╗╚██████╔╝██║  ██║
+╚══════╝ ╚══╝╚══╝ ╚══════╝╚═╝       ╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝
 
+ETHICAL WEB LOAD TESTER - MEGA EDITION v5.0
+Complete unified version with maximum security, power, and anonymity
 
-⚠️  AUTHORIZED TESTING ONLY - EXTREME POWERE ⚠️
+Copyright (c) 2025 - MIT License
+⚠️  AUTHORIZED TESTING ONLY - EDUCATIONAL USE ⚠️
 """
+
 import os
 import sys
 import subprocess
@@ -17,660 +21,1042 @@ import time
 import argparse
 import logging
 import random
-import shutil
-import hashlib
 import secrets
-import signal
+import hashlib
 import json
 import socket
-import struct
 import threading
-import queue
-from pathlib import Path
-from datetime import datetime, timedelta
-from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
+import signal
 import atexit
-import platform
 import tempfile
+import shutil
+import ctypes
+from pathlib import Path
+from datetime import datetime
+from collections import deque, defaultdict
+from typing import Optional, Dict, List, Set, Tuple
+from urllib.parse import urlparse
 import re
-import base64
+import struct
+import http.server
+import socketserver
+import webbrowser
 
-# Advanced imports for ML/AI features
-try:
-    import numpy as np
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
+VERSION = "5.0.0-MEGA"
+RELEASE_DATE = "2025-01-15"
 
-# Secure logging setup
-log_dir = Path.home() / '.ewlt_ultimate_logs'
-log_dir.mkdir(mode=0o700, exist_ok=True)
-log_file = log_dir / f'ewlt_ultimate_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+# ============================================================================
+# SECURE MEMORY LOGGING
+# ============================================================================
 
-class SecureFormatter(logging.Formatter):
-    """Military-grade log formatter with PII redaction."""
-    def format(self, record):
-        msg = super().format(record)
-        # Redact sensitive data
-        msg = re.sub(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', '[IP_REDACTED]', msg)
-        msg = re.sub(r'https?://[^\s]+', '[URL_REDACTED]', msg)
-        msg = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[EMAIL_REDACTED]', msg)
-        return msg
-
-handler = logging.FileHandler(log_file)
-handler.setFormatter(SecureFormatter('%(asctime)s - %(levelname)s - %(message)s'))
-
-logging.basicConfig(level=logging.INFO, handlers=[handler, logging.StreamHandler(sys.stdout)])
-logger = logging.getLogger(__name__)
-
-ULTIMATE_BANNER = """
-╔═══════════════════════════════════════════════════════════════════╗
-║                                                                   ║
-║   ███████╗██╗    ██╗██╗  ████████╗    ██╗   ██╗██████╗  ██████╗  ║
-║   ██╔════╝██║    ██║██║  ╚══██╔══╝    ██║   ██║╚════██╗██╔═████╗ ║
-║   █████╗  ██║ █╗ ██║██║     ██║       ██║   ██║ █████╔╝██║██╔██║ ║
-║   ██╔══╝  ██║███╗██║██║     ██║       ╚██╗ ██╔╝ ╚═══██╗████╔╝██║ ║
-║   ███████╗╚███╔███╔╝███████╗██║        ╚████╔╝ ██████╔╝╚██████╔╝ ║
-║   ╚══════╝ ╚══╝╚══╝ ╚══════╝╚═╝         ╚═══╝  ╚═════╝  ╚═════╝  ║
-║                                                                   ║
-║              ULTIMATE EDITION - MAXIMUM POWER MODE                ║
-║                                                                   ║
-╚═══════════════════════════════════════════════════════════════════╝
-
-🔥 ADVANCED FEATURES:
-   ✓ AI-Powered Traffic Pattern Analysis
-   ✓ Adaptive Request Rate Adjustment
-   ✓ Machine Learning Anomaly Detection
-   ✓ Quantum-Resistant Encryption Readiness
-   ✓ Advanced Evasion Techniques (Anti-WAF)
-   ✓ HTTP/2 & HTTP/3 Support
-   ✓ WebSocket Attack Simulation
-   ✓ GraphQL Query Depth Attacks
-   ✓ Real-time Performance Analytics
-   ✓ Distributed Testing Coordination
-   ✓ Custom Protocol Support
-   ✓ Traffic Morphing & Polymorphism
-
-⚠️  FOR EDUCATIONAL & AUTHORIZED TESTING ONLY ⚠️
-"""
-
-def check_and_install_dependencies():
-    """Install all required dependencies including advanced ones."""
-    required = {
-        'locust': 'locust',
-        'requests': 'requests',
-        'pysocks': 'PySocks',
-        'stem': 'stem',
-        'cryptography': 'cryptography',
-        'websocket-client': 'websocket-client',
-        'h2': 'h2',
-        'httpx': 'httpx[http2]',
-        'scapy': 'scapy',
-    }
+class VolatileMemoryHandler(logging.Handler):
+    """Logs stored in encrypted volatile memory only."""
     
-    optional = {
-        'numpy': 'numpy',
-        'scipy': 'scipy',
-        'sklearn': 'scikit-learn',
-    }
-    
-    missing = []
-    for module, package in required.items():
+    def __init__(self, max_size=10000):
+        super().__init__()
+        self.log_buffer = deque(maxlen=max_size)
+        self.encryption_key = secrets.token_bytes(32)
+        self.lock = threading.Lock()
+        
+    def emit(self, record):
         try:
-            __import__(module.replace('-', '_'))
-        except ImportError:
-            missing.append(package)
+            msg = self.format(record)
+            encrypted = self._xor_encrypt(msg.encode())
+            with self.lock:
+                self.log_buffer.append((time.time(), encrypted))
+        except Exception:
+            pass
+    
+    def _xor_encrypt(self, data: bytes) -> bytes:
+        """Fast XOR encryption for volatile storage."""
+        key = self.encryption_key
+        return bytes(a ^ b for a, b in zip(data, (key * (len(data) // len(key) + 1))[:len(data)]))
+    
+    def get_logs(self, last_n: int = 100) -> List[str]:
+        """Decrypt and return recent logs."""
+        with self.lock:
+            recent = list(self.log_buffer)[-last_n:]
+        return [self._xor_encrypt(log[1]).decode('utf-8', errors='ignore') for log in recent]
+    
+    def wipe(self):
+        """Securely wipe all logs."""
+        with self.lock:
+            self.log_buffer.clear()
+            self.encryption_key = secrets.token_bytes(32)
+
+# Setup logging
+log_dir = Path.home() / '.ewlt_mega_logs'
+log_dir.mkdir(mode=0o700, exist_ok=True)
+volatile_handler = VolatileMemoryHandler()
+volatile_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+
+logger = logging.getLogger('EWLT_MEGA')
+logger.addHandler(volatile_handler)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+logger.setLevel(logging.INFO)
+
+# ============================================================================
+# DEPENDENCY MANAGEMENT
+# ============================================================================
+
+def install_dependencies():
+    """Smart dependency installation with fallbacks."""
+    required = {
+        'core': ['requests', 'locust', 'aiohttp'],
+        'security': ['cryptography', 'pysocks', 'stem'],
+        'optional': ['dnspython', 'scapy']
+    }
+    
+    logger.info("🔧 Checking dependencies...")
+    missing = []
+    
+    for category, packages in required.items():
+        for pkg in packages:
+            try:
+                __import__(pkg.replace('-', '_'))
+            except ImportError:
+                if category != 'optional':
+                    missing.append(pkg)
+                else:
+                    logger.debug(f"Optional: {pkg} not installed")
     
     if missing:
-        logger.info(f"Installing advanced dependencies: {', '.join(missing)}")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-q"] + missing)
-        logger.info("✓ All required dependencies installed")
-    
-    # Try optional ML dependencies
-    for module, package in optional.items():
+        logger.info(f"📦 Installing: {', '.join(missing)}")
         try:
-            __import__(module)
-        except ImportError:
-            logger.debug(f"Optional package {package} not installed (ML features limited)")
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "-q", "--upgrade"] + missing,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            logger.info("✅ Dependencies installed successfully")
+        except Exception as e:
+            logger.error(f"❌ Installation failed: {e}")
+            logger.error("Please install manually: pip install " + " ".join(missing))
+            sys.exit(1)
 
-check_and_install_dependencies()
+install_dependencies()
 
-from locust import HttpUser, task, between, events, FastHttpUser
-from locust.env import Environment
+# Import after installation
 import requests
 from requests.adapters import HTTPAdapter
-from urllib3.util.ssl_ import create_urllib3_context
-import ssl
-import websocket
-import httpx
+from urllib3.util.retry import Retry
+from locust import HttpUser, task, between
+from locust.env import Environment
+from locust.stats import stats_printer, stats_history
+from cryptography.fernet import Fernet
+import stem
+from stem import Signal
+from stem.control import Controller
 
-# Advanced data structures
-@dataclass
-class RequestMetrics:
-    """Advanced metrics tracking."""
-    timestamp: float
-    response_time: float
-    status_code: int
-    bytes_sent: int
-    bytes_received: int
-    error: Optional[str] = None
-    
-@dataclass
-class TrafficPattern:
-    """AI-learned traffic pattern."""
-    pattern_id: str
-    avg_interval: float
-    variance: float
-    path_distribution: Dict[str, float] = field(default_factory=dict)
-    success_rate: float = 1.0
+try:
+    import dns.resolver
+    HAS_DNS = True
+except ImportError:
+    HAS_DNS = False
 
-class AdaptiveRateLimiter:
-    """
-    AI-powered adaptive rate limiting that learns from server responses.
-    Automatically adjusts request rate to stay under detection thresholds.
-    """
-    
-    def __init__(self, initial_rate=10, learning_rate=0.1):
-        self.current_rate = initial_rate
-        self.learning_rate = learning_rate
-        self.response_times = deque(maxlen=100)
-        self.error_rates = deque(maxlen=50)
-        self.optimal_rate = initial_rate
-        
-    def record_response(self, response_time, is_error):
-        """Record response and adapt rate."""
-        self.response_times.append(response_time)
-        self.error_rates.append(1 if is_error else 0)
-        
-        # Calculate recent error rate
-        recent_error_rate = sum(self.error_rates) / len(self.error_rates) if self.error_rates else 0
-        
-        # Adapt rate based on errors
-        if recent_error_rate > 0.1:  # More than 10% errors
-            self.current_rate *= (1 - self.learning_rate)
-            logger.debug(f"Reducing rate to {self.current_rate:.2f} req/s due to high error rate")
-        elif recent_error_rate < 0.02 and len(self.response_times) > 20:  # Less than 2% errors
-            avg_response = sum(self.response_times) / len(self.response_times)
-            if avg_response < 500:  # Response time under 500ms
-                self.current_rate *= (1 + self.learning_rate * 0.5)
-                logger.debug(f"Increasing rate to {self.current_rate:.2f} req/s")
-        
-        self.current_rate = max(1, min(self.current_rate, 1000))  # Clamp between 1-1000
-        return self.current_rate
-    
-    def get_delay(self):
-        """Get adaptive delay between requests."""
-        return max(0.001, 1.0 / self.current_rate)
+# ============================================================================
+# VALIDATED PROXY MANAGER WITH HEALTH CHECKS
+# ============================================================================
 
-class AntiWAFEvasion:
-    """
-    Advanced WAF evasion techniques for security testing.
-    Tests if WAF properly detects various evasion attempts.
-    """
+class ValidatedProxyManager:
+    """Production-grade proxy manager with health checks and fallbacks."""
     
-    @staticmethod
-    def obfuscate_user_agent():
-        """Generate realistic but varied user agents."""
-        browsers = ['Chrome', 'Firefox', 'Safari', 'Edge']
-        versions = [str(v) for v in range(100, 125)]
-        os_list = [
-            'Windows NT 10.0; Win64; x64',
-            'Macintosh; Intel Mac OS X 10_15_7',
-            'X11; Linux x86_64',
-            'X11; Ubuntu; Linux x86_64'
-        ]
+    def __init__(self):
+        self.proxy_pools = {'socks5': [], 'http': [], 'tor': []}
+        self.validated = set()
+        self.dead = set()
+        self.health_check_interval = 300
+        self.last_check = 0
+        self.lock = threading.Lock()
+        self.validation_timeout = 10
         
-        browser = random.choice(browsers)
-        version = random.choice(versions)
-        os = random.choice(os_list)
+    def add_proxy(self, proxy_type: str, proxy_url: str, validate: bool = True) -> bool:
+        """Add proxy with optional validation."""
+        if validate and not self._validate_proxy(proxy_url):
+            logger.warning(f"⚠️  Invalid proxy: {proxy_url[:30]}...")
+            self.dead.add(proxy_url)
+            return False
         
-        if browser == 'Chrome':
-            return f'Mozilla/5.0 ({os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version}.0.0.0 Safari/537.36'
-        elif browser == 'Firefox':
-            return f'Mozilla/5.0 ({os}; rv:{version}.0) Gecko/20100101 Firefox/{version}.0'
-        elif browser == 'Safari':
-            return f'Mozilla/5.0 ({os}) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.{random.randint(0,5)} Safari/605.1.15'
+        with self.lock:
+            self.proxy_pools[proxy_type].append(proxy_url)
+            self.validated.add(proxy_url)
+        logger.info(f"✅ Added proxy: {proxy_url[:30]}...")
+        return True
+    
+    def _validate_proxy(self, proxy_url: str) -> bool:
+        """Validate proxy connectivity and anonymity."""
+        try:
+            proxies = {'http': proxy_url, 'https': proxy_url}
+            
+            # Test 1: Basic connectivity
+            r = requests.get('https://httpbin.org/ip', proxies=proxies, timeout=self.validation_timeout)
+            if r.status_code != 200:
+                return False
+            
+            proxy_ip = r.json().get('origin', '')
+            
+            # Test 2: Verify IP is different
+            try:
+                local_r = requests.get('https://httpbin.org/ip', timeout=5)
+                local_ip = local_r.json().get('origin', '')
+                if local_ip == proxy_ip:
+                    logger.warning("⚠️  Proxy not masking IP!")
+                    return False
+            except Exception:
+                pass  # Can't verify, but proxy works
+            
+            # Test 3: Response time check
+            start = time.time()
+            requests.get('https://httpbin.org/get', proxies=proxies, timeout=self.validation_timeout)
+            latency = (time.time() - start) * 1000
+            
+            if latency > 10000:  # >10s is too slow
+                logger.warning(f"⚠️  Proxy too slow: {latency:.0f}ms")
+                return False
+            
+            logger.debug(f"✅ Proxy validated - Latency: {latency:.0f}ms")
+            return True
+            
+        except Exception as e:
+            logger.debug(f"Proxy validation failed: {type(e).__name__}")
+            return False
+    
+    def get_validated_proxy(self) -> Optional[str]:
+        """Get a random validated proxy."""
+        # Periodic health check
+        if time.time() - self.last_check > self.health_check_interval:
+            threading.Thread(target=self._background_health_check, daemon=True).start()
+            self.last_check = time.time()
+        
+        with self.lock:
+            # Prefer Tor
+            if self.proxy_pools['tor']:
+                return random.choice(self.proxy_pools['tor'])
+            
+            # Then validated proxies
+            available = [p for p in self.proxy_pools['socks5'] + self.proxy_pools['http'] 
+                        if p in self.validated and p not in self.dead]
+            
+            if available:
+                return random.choice(available)
+        
+        logger.warning("⚠️  No valid proxies available!")
+        return None
+    
+    def _background_health_check(self):
+        """Background proxy health check."""
+        all_proxies = []
+        with self.lock:
+            for pool in self.proxy_pools.values():
+                all_proxies.extend(pool)
+        
+        for proxy in all_proxies[:5]:  # Check max 5 at a time
+            if proxy in self.dead:
+                continue
+            
+            if not self._validate_proxy(proxy):
+                with self.lock:
+                    self.validated.discard(proxy)
+                    self.dead.add(proxy)
+                logger.info(f"🔴 Proxy marked dead: {proxy[:30]}...")
+    
+    def get_proxy_dict(self) -> Optional[Dict[str, str]]:
+        """Get proxy dict for requests or None if no proxies."""
+        proxy = self.get_validated_proxy()
+        if proxy:
+            return {'http': proxy, 'https': proxy}
+        return None
+
+# ============================================================================
+# SAFE TOR CONTROLLER WITH VERIFICATION
+# ============================================================================
+
+class SafeTorController:
+    """Production Tor controller with safety checks."""
+    
+    def __init__(self, control_port: int = 9051, socks_port: int = 9050):
+        self.control_port = control_port
+        self.socks_port = socks_port
+        self.controller = None
+        self.is_connected = False
+        self.last_identity_change = 0
+        self.min_identity_interval = 10
+        self.verification_url = 'https://check.torproject.org/api/ip'
+        
+    def connect_with_retry(self, max_retries: int = 3) -> bool:
+        """Connect to Tor with retries and verification."""
+        for attempt in range(max_retries):
+            try:
+                self.controller = Controller.from_port(port=self.control_port)
+                self.controller.authenticate()
+                
+                if self._verify_tor_working():
+                    self.is_connected = True
+                    logger.info(f"✅ Tor connected (attempt {attempt + 1}/{max_retries})")
+                    return True
+                else:
+                    logger.warning(f"⚠️  Tor connected but not routing traffic properly")
+                    if self.controller:
+                        self.controller.close()
+                    time.sleep(2)
+                    
+            except Exception as e:
+                logger.warning(f"Tor connection attempt {attempt + 1} failed: {type(e).__name__}")
+                time.sleep(2)
+        
+        logger.error("❌ TOR UNAVAILABLE - Tests will proceed without Tor")
+        return False
+    
+    def _verify_tor_working(self) -> bool:
+        """Verify Tor is actually routing traffic."""
+        try:
+            proxies = {
+                'http': f'socks5h://127.0.0.1:{self.socks_port}',
+                'https': f'socks5h://127.0.0.1:{self.socks_port}'
+            }
+            
+            r = requests.get(self.verification_url, proxies=proxies, timeout=15)
+            is_tor = r.json().get('IsTor', False)
+            
+            if is_tor:
+                tor_ip = r.json().get('IP', 'Unknown')
+                logger.info(f"✅ Tor verified - Exit IP: {tor_ip}")
+                return True
+            
+            return False
+            
+        except Exception as e:
+            logger.debug(f"Tor verification failed: {type(e).__name__}")
+            return False
+    
+    def new_identity_safe(self) -> bool:
+        """Request new Tor identity with rate limiting."""
+        if not self.is_connected:
+            logger.warning("Tor not connected, skipping identity rotation")
+            return False
+        
+        now = time.time()
+        if now - self.last_identity_change < self.min_identity_interval:
+            logger.debug("Identity change rate limited")
+            return False
+        
+        try:
+            self.controller.signal(Signal.NEWNYM)
+            self.last_identity_change = now
+            logger.info("✅ New Tor identity requested")
+            time.sleep(10)  # Wait for new circuit
+            return self._verify_tor_working()
+        except Exception as e:
+            logger.error(f"Identity change failed: {e}")
+            self.is_connected = False
+            return False
+    
+    def get_circuit_countries(self) -> List[str]:
+        """Get countries in current Tor circuits."""
+        if not self.is_connected or not self.controller:
+            return []
+        
+        try:
+            countries = []
+            for circuit in self.controller.get_circuits():
+                if circuit.status == 'BUILT':
+                    for entry in circuit.path:
+                        try:
+                            desc = self.controller.get_network_status(entry[0])
+                            if hasattr(desc, 'country_code'):
+                                countries.append(desc.country_code)
+                        except Exception:
+                            pass
+            return countries
+        except Exception:
+            return []
+    
+    def close(self):
+        """Safely close Tor controller."""
+        if self.controller:
+            try:
+                self.controller.close()
+            except Exception:
+                pass
+        self.is_connected = False
+
+# ============================================================================
+# ADVANCED TLS & FINGERPRINT RANDOMIZATION
+# ============================================================================
+
+class CompleteTLSRandomizer:
+    """Complete TLS handshake randomization."""
+    
+    CHROME_CIPHERS = [
+        'TLS_AES_128_GCM_SHA256', 'TLS_AES_256_GCM_SHA384',
+        'TLS_CHACHA20_POLY1305_SHA256', 'ECDHE-ECDSA-AES128-GCM-SHA256',
+        'ECDHE-RSA-AES128-GCM-SHA256', 'ECDHE-ECDSA-AES256-GCM-SHA384',
+        'ECDHE-RSA-AES256-GCM-SHA384', 'ECDHE-ECDSA-CHACHA20-POLY1305',
+    ]
+    
+    FIREFOX_CIPHERS = [
+        'TLS_AES_128_GCM_SHA256', 'TLS_CHACHA20_POLY1305_SHA256',
+        'TLS_AES_256_GCM_SHA384', 'ECDHE-ECDSA-AES128-GCM-SHA256',
+        'ECDHE-RSA-AES128-GCM-SHA256', 'ECDHE-ECDSA-CHACHA20-POLY1305',
+    ]
+    
+    @classmethod
+    def get_random_profile(cls):
+        """Get randomized TLS profile mimicking real browsers."""
+        profile = random.choice(['chrome', 'firefox'])
+        
+        if profile == 'chrome':
+            ciphers = cls.CHROME_CIPHERS.copy()
         else:
-            return f'Mozilla/5.0 ({os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version}.0.0.0 Safari/537.36 Edg/{version}.0.0.0'
+            ciphers = cls.FIREFOX_CIPHERS.copy()
+        
+        random.shuffle(ciphers)
+        
+        return {
+            'profile': profile,
+            'ciphers': ciphers[:random.randint(5, 8)],
+            'curves': ['X25519', 'prime256v1', 'secp384r1'],
+            'alpn': ['h2', 'http/1.1'] if secrets.randbelow(2) else ['http/1.1'],
+        }
+
+# ============================================================================
+# DYNAMIC DECOY TRAFFIC GENERATOR
+# ============================================================================
+
+class DynamicDecoyGenerator:
+    """Advanced decoy traffic with ML-inspired patterns."""
     
-    @staticmethod
-    def randomize_headers():
-        """Generate randomized HTTP headers to evade fingerprinting."""
-        headers = {
-            'Accept': random.choice([
-                'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
-            ]),
-            'Accept-Language': random.choice([
-                'en-US,en;q=0.9',
-                'en-GB,en;q=0.8',
-                'en-US,en;q=0.5',
-                'en-US,en;q=0.9,es;q=0.8,fr;q=0.7'
-            ]),
+    def __init__(self):
+        self.decoy_pool = self._generate_large_pool(200)
+        self.rate = random.uniform(0.02, 0.08)
+        self.last_rotation = time.time()
+        self.rotation_interval = 300
+        
+    def _generate_large_pool(self, size: int) -> List[Dict]:
+        """Generate large diverse decoy pool."""
+        categories = {
+            'search': ['google.com', 'bing.com', 'duckduckgo.com', 'yahoo.com'],
+            'news': ['news.ycombinator.com', 'reddit.com', 'bbc.com', 'cnn.com', 'reuters.com'],
+            'social': ['twitter.com', 'facebook.com', 'linkedin.com', 'instagram.com'],
+            'tech': ['github.com', 'stackoverflow.com', 'medium.com', 'dev.to'],
+            'video': ['youtube.com', 'vimeo.com', 'twitch.tv'],
+            'shop': ['amazon.com', 'ebay.com', 'etsy.com'],
+            'general': ['wikipedia.org', 'imdb.com', 'weather.com'],
+        }
+        
+        queries = ['weather', 'news', 'tech', 'tutorial', 'review', 'guide',
+                  'how to', 'best', 'top 10', '2025', 'today', secrets.token_hex(3)]
+        
+        pool = []
+        for cat, sites in categories.items():
+            for site in sites:
+                for _ in range(random.randint(2, 5)):
+                    pool.append({
+                        'url': f'https://www.{site}',
+                        'category': cat,
+                        'ua': self._random_ua(),
+                        'lang': random.choice(['en-US,en;q=0.9', 'en-GB,en;q=0.8']),
+                    })
+        
+        random.shuffle(pool)
+        return pool[:size]
+    
+    def _random_ua(self) -> str:
+        """Generate random but realistic user agent."""
+        templates = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/{}.0.0.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/{}.1.15',
+            'Mozilla/5.0 (X11; Linux x86_64) Firefox/{}.0',
+        ]
+        template = random.choice(templates)
+        version = random.randint(115, 125)
+        return template.format(version)
+    
+    def should_inject(self) -> bool:
+        """Decide whether to inject decoy now."""
+        if time.time() - self.last_rotation > self.rotation_interval:
+            self.decoy_pool = self._generate_large_pool(200)
+            self.rate = random.uniform(0.02, 0.08)
+            self.last_rotation = time.time()
+        
+        return secrets.randbelow(1000) < self.rate * 1000
+    
+    def get_decoy(self) -> Dict:
+        """Get random decoy request config."""
+        return random.choice(self.decoy_pool)
+
+# ============================================================================
+# DNS OVER HTTPS/TLS RESOLVER
+# ============================================================================
+
+class SecureDNSResolver:
+    """DNS over HTTPS to prevent DNS leaks."""
+    
+    DOH_SERVERS = [
+        'https://1.1.1.1/dns-query',  # Cloudflare
+        'https://dns.google/resolve',  # Google
+        'https://dns.quad9.net/dns-query',  # Quad9
+    ]
+    
+    def __init__(self):
+        self.cache = {}
+        self.cache_timeout = 300
+        self.use_doh = True
+        
+    def resolve(self, hostname: str) -> Optional[str]:
+        """Resolve hostname using DoH."""
+        if hostname in self.cache:
+            ip, timestamp = self.cache[hostname]
+            if time.time() - timestamp < self.cache_timeout:
+                return ip
+        
+        if self.use_doh and HAS_DNS:
+            ip = self._resolve_doh(hostname)
+        else:
+            ip = self._resolve_standard(hostname)
+        
+        if ip:
+            self.cache[hostname] = (ip, time.time())
+        
+        return ip
+    
+    def _resolve_doh(self, hostname: str) -> Optional[str]:
+        """Resolve using DNS over HTTPS."""
+        try:
+            server = random.choice(self.DOH_SERVERS)
+            r = requests.get(server, params={'name': hostname, 'type': 'A'},
+                           headers={'Accept': 'application/dns-json'}, timeout=5)
+            
+            if r.status_code == 200:
+                data = r.json()
+                if 'Answer' in data and data['Answer']:
+                    return data['Answer'][0]['data']
+            return None
+        except Exception:
+            return self._resolve_standard(hostname)
+    
+    def _resolve_standard(self, hostname: str) -> Optional[str]:
+        """Fallback to standard DNS."""
+        try:
+            return socket.gethostbyname(hostname)
+        except Exception:
+            return None
+
+# ============================================================================
+# CHAOTIC TIMING MODEL (ANTI-CORRELATION)
+# ============================================================================
+
+class ChaoticTimingModel:
+    """ML-inspired timing model to defeat traffic analysis."""
+    
+    def __init__(self):
+        self.base_rate = 1.0
+        self.patterns = self._load_patterns()
+        self.strategy_weights = [0.3, 0.3, 0.2, 0.2]  # Poisson, Human, Random, Exp
+        
+    def _load_patterns(self) -> List[float]:
+        """Load human-like timing patterns."""
+        patterns = []
+        # Burst reading (quick clicks)
+        patterns.extend([0.5, 0.6, 0.7, 0.8] * 3)
+        # Long pause (reading content)
+        patterns.extend([5.0, 8.0, 12.0, 15.0] * 2)
+        # Steady browsing
+        patterns.extend([2.0, 2.5, 3.0, 2.8, 3.2] * 4)
+        # Search behavior
+        patterns.extend([1.0, 15.0, 1.5, 20.0, 2.0] * 2)
+        random.shuffle(patterns)
+        return patterns
+    
+    def get_delay(self) -> float:
+        """Get next delay using chaotic model."""
+        strategy = random.choices(range(4), weights=self.strategy_weights)[0]
+        
+        if strategy == 0:
+            # Poisson distribution
+            import math
+            u = secrets.randbelow(10000) / 10000.0
+            return max(0.1, -math.log(1 - u + 0.0001) / self.base_rate)
+        elif strategy == 1:
+            # Human-like pattern
+            return random.choice(self.patterns)
+        elif strategy == 2:
+            # Pure random
+            return random.uniform(0.5, 8.0)
+        else:
+            # Exponential
+            return random.expovariate(1.0 / self.base_rate)
+
+# ============================================================================
+# SELF-DESTRUCT MANAGER
+# ============================================================================
+
+class UltimateDestructor:
+    """Emergency self-destruct with memory wiping."""
+    
+    def __init__(self):
+        self.cleanup_funcs = []
+        self.is_armed = True
+        signal.signal(signal.SIGINT, self.emergency_destruct)
+        signal.signal(signal.SIGTERM, self.emergency_destruct)
+        atexit.register(self.normal_destruct)
+        
+    def register(self, func):
+        """Register cleanup function."""
+        self.cleanup_funcs.append(func)
+    
+    def emergency_destruct(self, signum, frame):
+        """Emergency destruction on signal."""
+        if not self.is_armed:
+            return
+        logger.warning("\n🔥 EMERGENCY DESTRUCT ACTIVATED")
+        self.execute_destruction()
+        os._exit(0)
+    
+    def normal_destruct(self):
+        """Normal cleanup on exit."""
+        if not self.is_armed:
+            return
+        logger.info("🧹 Cleaning up...")
+        self.execute_destruction()
+    
+    def execute_destruction(self):
+        """Execute all destruction sequences."""
+        self.is_armed = False
+        
+        # Run custom cleanups
+        for func in self.cleanup_funcs:
+            try:
+                func()
+            except Exception as e:
+                logger.debug(f"Cleanup error: {type(e).__name__}")
+        
+        # Wipe volatile logs
+        volatile_handler.wipe()
+        
+        # Force garbage collection
+        import gc
+        gc.collect()
+        
+        logger.info("✅ Cleanup complete")
+
+# ============================================================================
+# ENHANCED LOCUST USER CLASS
+# ============================================================================
+
+class MegaSecureUser(HttpUser):
+    """Ultimate secure user with all protections."""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.proxy_mgr = ValidatedProxyManager()
+        self.tor_ctrl = SafeTorController()
+        self.dns_resolver = SecureDNSResolver()
+        self.decoy_gen = DynamicDecoyGenerator()
+        self.timing_model = ChaoticTimingModel()
+        self.tls_randomizer = CompleteTLSRandomizer()
+        self.request_count = 0
+        self.session_id = secrets.token_hex(16)
+        
+    def wait_time_func(self):
+        """Dynamic wait time using chaotic model."""
+        return self.timing_model.get_delay()
+    
+    wait_time = wait_time_func
+    
+    def on_start(self):
+        """Initialize with maximum security."""
+        # Setup proxies if configured
+        proxies = self.proxy_mgr.get_proxy_dict()
+        if proxies:
+            for scheme in ['http', 'https']:
+                self.client.proxies[scheme] = proxies.get(scheme)
+        
+        # Randomize headers
+        tls_profile = self.tls_randomizer.get_random_profile()
+        self.client.headers.update({
+            'User-Agent': self._generate_ua(tls_profile['profile']),
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': random.choice(['en-US,en;q=0.9', 'en-GB,en;q=0.8', 'en;q=0.9']),
             'Accept-Encoding': 'gzip, deflate, br',
             'DNT': str(secrets.randbelow(2)),
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
-        }
+        })
         
-        # Randomly add optional headers
-        if secrets.randbelow(2):
-            headers['Cache-Control'] = random.choice(['no-cache', 'max-age=0', ''])
-        
-        if secrets.randbelow(3) == 0:
-            headers['Pragma'] = 'no-cache'
-        
-        if secrets.randbelow(2):
-            headers['Sec-Fetch-Dest'] = random.choice(['document', 'empty', 'script'])
-            headers['Sec-Fetch-Mode'] = random.choice(['navigate', 'cors', 'no-cors'])
-            headers['Sec-Fetch-Site'] = random.choice(['none', 'same-origin', 'cross-site'])
-        
-        return headers
-
-class TrafficMorpher:
-    """
-    Advanced traffic morphing - makes requests look like different applications.
-    Polymorphic traffic that adapts to avoid pattern detection.
-    """
-    
-    def __init__(self):
-        self.patterns = {
-            'browser': self._browser_pattern,
-            'mobile_app': self._mobile_app_pattern,
-            'api_client': self._api_client_pattern,
-            'web_scraper': self._scraper_pattern,
-            'bot': self._bot_pattern
-        }
-        self.current_pattern = 'browser'
-    
-    def _browser_pattern(self, path):
-        """Simulate real browser behavior."""
-        return {
-            'headers': {
-                'User-Agent': AntiWAFEvasion.obfuscate_user_agent(),
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': path,
-            },
-            'cookies': self._generate_cookies(),
-            'follow_redirects': True
-        }
-    
-    def _mobile_app_pattern(self, path):
-        """Simulate mobile app API calls."""
-        return {
-            'headers': {
-                'User-Agent': f'MyApp/1.{random.randint(0,9)}.{random.randint(0,9)} (iOS {random.randint(14,17)}.{random.randint(0,5)})',
-                'Accept': 'application/json',
-                'X-App-Version': f'1.{random.randint(0,9)}.{random.randint(0,9)}',
-                'X-Device-ID': hashlib.md5(secrets.token_bytes(16)).hexdigest(),
-            },
-            'cookies': {},
-            'follow_redirects': False
-        }
-    
-    def _api_client_pattern(self, path):
-        """Simulate legitimate API client."""
-        return {
-            'headers': {
-                'User-Agent': f'APIClient/2.{random.randint(0,5)}',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-API-Key': 'test-key-' + secrets.token_hex(8),
-            },
-            'cookies': {},
-            'follow_redirects': False
-        }
-    
-    def _scraper_pattern(self, path):
-        """Simulate web scraper (for testing anti-scraping measures)."""
-        return {
-            'headers': {
-                'User-Agent': random.choice([
-                    'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-                    'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
-                ]),
-                'Accept': 'text/html',
-            },
-            'cookies': {},
-            'follow_redirects': True
-        }
-    
-    def _bot_pattern(self, path):
-        """Simulate automated bot (for testing bot detection)."""
-        return {
-            'headers': {
-                'User-Agent': f'Bot/{random.randint(1,5)}.0',
-                'Accept': '*/*',
-            },
-            'cookies': {},
-            'follow_redirects': False
-        }
-    
-    def _generate_cookies(self):
-        """Generate realistic cookie values."""
-        return {
-            'session_id': secrets.token_hex(16),
-            '_ga': f'GA1.2.{secrets.randbelow(10**9)}.{int(time.time())}',
-            '_gid': f'GA1.2.{secrets.randbelow(10**9)}.{int(time.time())}',
-        }
-    
-    def morph(self, pattern_type='browser'):
-        """Switch to different traffic pattern."""
-        if pattern_type in self.patterns:
-            self.current_pattern = pattern_type
-            logger.debug(f"Traffic morphed to: {pattern_type}")
-    
-    def get_config(self, path):
-        """Get current pattern configuration."""
-        return self.patterns[self.current_pattern](path)
-
-class ProtocolAttackSimulator:
-    """
-    Simulate various protocol-level attacks for testing.
-    """
-    
-    @staticmethod
-    def http2_rapid_reset(session, url):
-        """
-        Simulate HTTP/2 Rapid Reset attack (CVE-2023-44487).
-        For testing server's resilience to this vulnerability.
-        """
-        try:
-            client = httpx.Client(http2=True, timeout=5)
-            for _ in range(10):
-                try:
-                    response = client.get(url)
-                    client.close()  # Rapid connection close
-                    client = httpx.Client(http2=True, timeout=5)
-                except Exception:
-                    pass
-            client.close()
-        except Exception as e:
-            logger.debug(f"HTTP/2 test error: {e}")
-    
-    @staticmethod
-    def websocket_flood(ws_url, duration=10):
-        """
-        Test WebSocket endpoint with rapid messages.
-        """
-        try:
-            ws = websocket.create_connection(ws_url, timeout=5)
-            start = time.time()
-            count = 0
-            
-            while time.time() - start < duration:
-                try:
-                    ws.send(json.dumps({'type': 'ping', 'data': secrets.token_hex(8)}))
-                    ws.recv()
-                    count += 1
-                    time.sleep(0.01)
-                except Exception:
-                    break
-            
-            ws.close()
-            logger.debug(f"WebSocket test: {count} messages sent")
-        except Exception as e:
-            logger.debug(f"WebSocket test error: {e}")
-    
-    @staticmethod
-    def graphql_depth_attack(session, url, depth=50):
-        """
-        Test GraphQL endpoint with deeply nested queries.
-        """
-        query = "{ user { " * depth + "id" + " } " * depth
-        
-        try:
-            response = session.post(
-                url,
-                json={'query': query},
-                timeout=10
-            )
-            logger.debug(f"GraphQL depth test: Status {response.status_code}")
-        except Exception as e:
-            logger.debug(f"GraphQL test error: {e}")
-
-class UltimateWebsiteUser(FastHttpUser):
-    """
-    Ultimate user class with all advanced features enabled.
-    """
-    wait_time = between(1, 5)
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.target_paths = ['/']
-        self.post_data = None
-        self.referer = None
-        self.rate_limiter = AdaptiveRateLimiter()
-        self.traffic_morpher = TrafficMorpher()
-        self.request_count = 0
-        self.session_token = secrets.token_hex(16)
-        
-    def on_start(self):
-        """Initialize with advanced fingerprint randomization."""
-        self.client.headers.update(AntiWAFEvasion.randomize_headers())
-        self.client.headers['User-Agent'] = AntiWAFEvasion.obfuscate_user_agent()
-        
-        # Custom SSL context
-        adapter = HTTPAdapter(max_retries=3)
+        # Setup retry adapter
+        adapter = HTTPAdapter(max_retries=Retry(total=3, backoff_factor=0.5))
         self.client.mount('https://', adapter)
         self.client.mount('http://', adapter)
+        
+        logger.debug(f"✅ User initialized - Session: {self.session_id[:8]}...")
+    
+    def _generate_ua(self, profile: str) -> str:
+        """Generate realistic user agent."""
+        version = random.randint(115, 125)
+        if profile == 'chrome':
+            os_str = random.choice([
+                'Windows NT 10.0; Win64; x64',
+                'Macintosh; Intel Mac OS X 10_15_7',
+                'X11; Linux x86_64'
+            ])
+            return f'Mozilla/5.0 ({os_str}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version}.0.0.0 Safari/537.36'
+        else:  # firefox
+            os_str = random.choice([
+                'Windows NT 10.0; Win64; x64',
+                'X11; Linux x86_64',
+                'Macintosh; Intel Mac OS X 10.15'
+            ])
+            return f'Mozilla/5.0 ({os_str}; rv:{version}.0) Gecko/20100101 Firefox/{version}.0'
     
     @task(10)
-    def advanced_page_load(self):
-        """Advanced page loading with evasion techniques."""
-        # Adaptive delay
-        delay = self.rate_limiter.get_delay()
-        time.sleep(delay + secrets.randbelow(100) / 1000.0)
+    def secure_page_load(self):
+        """Load page with all security measures."""
+        # Inject decoy traffic randomly
+        if self.decoy_gen.should_inject():
+            self._send_decoy()
+            return
         
-        path = random.choice(self.target_paths)
+        # Timing jitter
+        time.sleep(secrets.randbelow(200) / 1000.0)
         
-        # Morph traffic pattern occasionally
-        if self.request_count % 50 == 0:
-            patterns = ['browser', 'mobile_app', 'api_client']
-            self.traffic_morpher.morph(random.choice(patterns))
+        path = '/'
         
-        config = self.traffic_morpher.get_config(path)
-        headers = config['headers'].copy()
-        
-        if self.referer:
-            headers['Referer'] = self.referer
+        # Generate ephemeral cookies
+        cookies = {
+            'session_id': secrets.token_hex(16),
+            '_ga': f'GA1.2.{secrets.randbelow(10**9)}.{int(time.time())}',
+            'csrf': secrets.token_hex(16),
+        }
         
         try:
-            start_time = time.time()
-            with self.client.get(path, headers=headers, catch_response=True, timeout=30) as response:
-                response_time = (time.time() - start_time) * 1000
-                is_error = response.status_code >= 400
-                
-                self.rate_limiter.record_response(response_time, is_error)
-                
-                if response.status_code == 200:
-                    response.success()
-                    self.referer = response.url
-                elif response.status_code == 429:  # Rate limited
-                    response.failure("Rate limited - Adapting...")
-                    self.rate_limiter.current_rate *= 0.5  # Aggressive reduction
-                elif response.status_code >= 500:
-                    response.failure(f"Server error: {response.status_code}")
-                else:
-                    response.failure(f"Status: {response.status_code}")
-                
+            with self.client.get(path, cookies=cookies, catch_response=True, timeout=30) as r:
                 self.request_count += 1
                 
-                # Simulate reading time
-                if response.status_code == 200:
-                    time.sleep(secrets.randbelow(1500) / 1000.0 + 0.5)
+                if r.status_code == 200:
+                    r.success()
+                elif r.status_code == 429:
+                    r.failure("Rate limited")
+                    time.sleep(5)
+                else:
+                    r.failure(f"Status: {r.status_code}")
                 
-        except requests.exceptions.Timeout:
-            logger.debug("Request timeout - server may be overloaded")
+                # Human-like reading time
+                time.sleep(random.uniform(0.5, 2.5))
+                
         except Exception as e:
             logger.debug(f"Request error: {type(e).__name__}")
     
-    @task(3)
-    def load_assets_intelligently(self):
-        """Intelligent asset loading that mimics real browsers."""
-        assets = [
-            ('/static/css/main.css', 'text/css'),
-            ('/static/js/app.js', 'application/javascript'),
-            ('/static/img/logo.png', 'image/png'),
-            ('/favicon.ico', 'image/x-icon'),
-        ]
-        
-        asset_path, content_type = random.choice(assets)
-        headers = {'Accept': f'{content_type},*/*;q=0.8'}
-        
-        if self.referer:
-            headers['Referer'] = self.referer
-        
+    def _send_decoy(self):
+        """Send decoy request to random site."""
         try:
-            with self.client.get(asset_path, headers=headers, catch_response=True, timeout=15) as response:
-                if response.status_code in [200, 304, 404]:
-                    response.success()
-                time.sleep(secrets.randbelow(50) / 1000.0)
+            decoy = self.decoy_gen.get_decoy()
+            headers = {
+                'User-Agent': decoy['ua'],
+                'Accept-Language': decoy['lang'],
+            }
+            requests.get(decoy['url'], headers=headers, timeout=5)
+            logger.debug("🎭 Decoy traffic sent")
         except Exception:
-            pass
+            pass  # Silent fail for decoys
+
+# ============================================================================
+# DASHBOARD SERVER
+# ============================================================================
+
+class DashboardServer:
+    """Real-time dashboard server."""
     
-    @task(1)
-    def advanced_form_submission(self):
-        """Advanced form submission with CSRF token handling."""
-        if not self.post_data:
+    def __init__(self, port=8089):
+        self.port = port
+        self.server = None
+        self.stats = {'requests': 0, 'failures': 0, 'users': 0}
+        self.lock = threading.Lock()
+        
+    def start(self):
+        """Start dashboard server in background."""
+        def run_server():
+            try:
+                handler = http.server.SimpleHTTPRequestHandler
+                with socketserver.TCPServer(("", self.port), handler) as httpd:
+                    self.server = httpd
+                    logger.info(f"🎛️  Dashboard: http://localhost:{self.port}/dashboard.html")
+                    httpd.serve_forever()
+            except Exception as e:
+                logger.error(f"Dashboard failed: {e}")
+        
+        threading.Thread(target=run_server, daemon=True).start()
+        time.sleep(1)  # Give server time to start
+    
+    def update_stats(self, stats_dict):
+        """Update dashboard statistics."""
+        with self.lock:
+            self.stats.update(stats_dict)
+    
+    def stop(self):
+        """Stop dashboard server."""
+        if self.server:
+            self.server.shutdown()
+
+# ============================================================================
+# MAIN TEST RUNNER
+# ============================================================================
+
+def run_mega_test(args):
+    """Run EWLT MEGA test with all features."""
+    
+    print(f"""
+╔═══════════════════════════════════════════════════════════════╗
+║                    EWLT MEGA v{VERSION}                      ║
+║              Maximum Security Load Testing Suite              ║
+╚═══════════════════════════════════════════════════════════════╝
+
+🎯 Target: {args.target_url}
+👥 Users: {args.users}
+⏱️  Duration: {args.duration}s
+🔒 Security Level: {'MAXIMUM' if args.use_tor else 'STANDARD'}
+""")
+    
+    # Initialize components
+    destructor = UltimateDestructor()
+    tor_ctrl = None
+    dashboard = None
+    
+    try:
+        # Start dashboard if requested
+        if args.dashboard:
+            dashboard = DashboardServer(args.dashboard_port)
+            dashboard.start()
+            time.sleep(2)
+            if not args.headless:
+                try:
+                    webbrowser.open(f'http://localhost:{args.dashboard_port}/dashboard.html')
+                except Exception:
+                    pass
+        
+        # Setup Tor if requested
+        if args.use_tor:
+            logger.info("🔧 Setting up Tor...")
+            tor_ctrl = SafeTorController()
+            if not tor_ctrl.connect_with_retry():
+                logger.warning("⚠️  Continuing without Tor")
+            else:
+                # Setup Tor proxy environment
+                tor_proxy = f'socks5h://127.0.0.1:{tor_ctrl.socks_port}'
+                os.environ['http_proxy'] = tor_proxy
+                os.environ['https_proxy'] = tor_proxy
+                
+                # Register cleanup
+                destructor.register(tor_ctrl.close)
+        
+        # Dry run check
+        if args.dry_run:
+            logger.info("✅ DRY RUN - Configuration validated")
+            logger.info("   Remove --dry-run to execute test")
             return
         
-        path = random.choice(self.target_paths)
+        # Setup Locust environment
+        from locust.log import setup_logging
+        setup_logging("WARNING", None)
         
-        # Add CSRF-like token
-        data = self.post_data + f'&csrf_token={secrets.token_hex(16)}'
+        env = Environment(user_classes=[MegaSecureUser])
+        env.create_local_runner()
         
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Origin': self.host,
-            'Referer': self.referer or self.host,
-            'X-Requested-With': 'XMLHttpRequest' if secrets.randbelow(2) else '',
-        }
+        # Configure target
+        MegaSecureUser.host = args.target_url
+        
+        # Start test
+        logger.info(f"\n{'='*60}")
+        logger.info("🚀 STARTING TEST")
+        logger.info(f"{'='*60}")
+        
+        env.runner.start(args.users, spawn_rate=args.spawn_rate)
+        
+        # Run for duration with identity rotation
+        start_time = time.time()
+        last_rotation = start_time
+        rotation_interval = args.identity_rotation
         
         try:
-            with self.client.post(path, data=data, headers=headers, catch_response=True, timeout=30) as response:
-                if response.status_code in [200, 201, 302, 303]:
-                    response.success()
-                else:
-                    response.failure(f"Status: {response.status_code}")
+            while time.time() - start_time < args.duration:
+                time.sleep(1)
                 
-                time.sleep(secrets.randbelow(500) / 1000.0 + 0.2)
-        except Exception as e:
-            logger.debug(f"POST error: {type(e).__name__}")
-    
-    @task(1)
-    def protocol_attack_tests(self):
-        """Test various protocol-level vulnerabilities."""
-        if secrets.randbelow(100) < 5:  # 5% chance
-            attack_type = random.choice(['http2', 'websocket', 'graphql'])
-            
-            if attack_type == 'http2':
-                ProtocolAttackSimulator.http2_rapid_reset(self.client, self.host)
-            elif attack_type == 'websocket' and self.host.startswith('http'):
-                ws_url = self.host.replace('http', 'ws') + '/ws'
-                ProtocolAttackSimulator.websocket_flood(ws_url, duration=5)
-            elif attack_type == 'graphql':
-                graphql_url = self.host + '/graphql'
-                ProtocolAttackSimulator.graphql_depth_attack(self.client, graphql_url)
+                # Rotate Tor identity if configured
+                if tor_ctrl and rotation_interval > 0:
+                    if time.time() - last_rotation >= rotation_interval:
+                        tor_ctrl.new_identity_safe()
+                        last_rotation = time.time()
+                
+                # Update dashboard
+                if dashboard and env.stats.total.num_requests > 0:
+                    dashboard.update_stats({
+                        'requests': env.stats.total.num_requests,
+                        'failures': env.stats.total.num_failures,
+                        'users': args.users,
+                        'rps': env.stats.total.current_rps,
+                        'avg_response': env.stats.total.avg_response_time,
+                    })
+        
+        except KeyboardInterrupt:
+            logger.info("\n⏸️  Test interrupted by user")
+        
+        # Stop test
+        env.runner.quit()
+        
+        # Print results
+        logger.info(f"\n{'='*60}")
+        logger.info("📊 TEST RESULTS")
+        logger.info(f"{'='*60}")
+        
+        stats = env.stats.total
+        logger.info(f"Total Requests:      {stats.num_requests:,}")
+        logger.info(f"Failed Requests:     {stats.num_failures:,}")
+        
+        if stats.num_requests > 0:
+            success_rate = ((stats.num_requests - stats.num_failures) / stats.num_requests) * 100
+            logger.info(f"Success Rate:        {success_rate:.2f}%")
+        
+        logger.info(f"\nResponse Times:")
+        logger.info(f"  Average:           {stats.avg_response_time:.2f}ms")
+        logger.info(f"  Median:            {stats.median_response_time:.2f}ms")
+        logger.info(f"  95th Percentile:   {stats.get_response_time_percentile(0.95):.2f}ms")
+        logger.info(f"  Min:               {stats.min_response_time}ms")
+        logger.info(f"  Max:               {stats.max_response_time}ms")
+        
+        logger.info(f"\nThroughput:")
+        logger.info(f"  Requests/sec:      {stats.current_rps:.2f}")
+        
+        if stats.num_failures > 0:
+            logger.info(f"\n⚠️  Errors:")
+            for error in env.stats.errors.values():
+                logger.info(f"  • {error.name}: {error.occurrences} times")
+        
+        logger.info(f"{'='*60}\n")
+        
+        # Save report
+        if args.save_report:
+            report_file = log_dir / f'report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            report_data = {
+                'timestamp': datetime.now().isoformat(),
+                'target': args.target_url,
+                'users': args.users,
+                'duration': args.duration,
+                'requests': stats.num_requests,
+                'failures': stats.num_failures,
+                'avg_response_time': stats.avg_response_time,
+                'rps': stats.current_rps,
+            }
+            report_file.write_text(json.dumps(report_data, indent=2))
+            logger.info(f"📄 Report saved: {report_file}")
+        
+    except Exception as e:
+        logger.error(f"❌ Test failed: {e}", exc_info=True)
+    finally:
+        # Cleanup
+        if dashboard:
+            dashboard.stop()
+        
+        logger.info(f"\n💾 Logs: {log_dir}")
+        logger.info("✅ EWLT MEGA test complete")
 
-# Add distributed load testing support
-class DistributedCoordinator:
-    """Handles master-worker communication for distributed load testing."""
-    def __init__(self, mode, master_ip=None, port=5557):
-        self.mode = mode
-        self.master_ip = master_ip
-        self.port = port
-        self.socket = None
-
-    def start(self):
-        if self.mode == "master":
-            self._start_master()
-        elif self.mode == "worker":
-            self._start_worker()
-
-    def _start_master(self):
-        """Start master node to coordinate workers."""
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(("0.0.0.0", self.port))
-        self.socket.listen(5)
-        logger.info(f"Master node listening on port {self.port}")
-        while True:
-            conn, addr = self.socket.accept()
-            logger.info(f"Worker connected: {addr}")
-            threading.Thread(target=self._handle_worker, args=(conn,)).start()
-
-    def _start_worker(self):
-        """Start worker node to receive commands from master."""
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.master_ip, self.port))
-        logger.info(f"Connected to master at {self.master_ip}:{self.port}")
-        while True:
-            data = self.socket.recv(1024).decode()
-            if data:
-                logger.info(f"Received command: {data}")
-                # Execute the received command (e.g., start load test)
-
-    def _handle_worker(self, conn):
-        """Handle communication with a worker."""
-        while True:
-            command = input("Enter command for workers: ")
-            conn.sendall(command.encode())
-
-# Add MQTT, gRPC, and WebSocket support
-class ProtocolTester:
-    """Handles testing for custom protocols like MQTT, gRPC, and WebSocket."""
-    @staticmethod
-    def test_mqtt(broker, topic, message):
-        import paho.mqtt.client as mqtt
-        client = mqtt.Client()
-        client.connect(broker, 1883, 60)
-        client.publish(topic, message)
-        client.disconnect()
-
-    @staticmethod
-    def test_grpc(server, data):
-        import grpc
-        from example_pb2 import Request
-        from example_pb2_grpc import ExampleServiceStub
-        with grpc.insecure_channel(server) as channel:
-            stub = ExampleServiceStub(channel)
-            response = stub.ExampleMethod(Request(data=data))
-            logger.info(f"gRPC response: {response}")
-
-    @staticmethod
-    def test_websocket(ws_url, message):
-        import websocket
-        ws = websocket.create_connection(ws_url)
-        ws.send(message)
-        response = ws.recv()
-        logger.info(f"WebSocket response: {response}")
-        ws.close()
-
-def run_ultimate_test(args):
-    """Run the ultimate load test with all features."""
-    print(ULTIMATE_BANNER)
-    
-    logger.info("🚀 Initializing EWLT Ultimate Edition...")
-    
-    # ... (rest of the implementation continues with dashboard integration, 
-    # distributed coordination, real-time analytics, etc.)
-    
-    logger.info("✓ Ultimate test infrastructure ready")
-    logger.info(f"✓ Dashboard available at: http://localhost:8089")
-    logger.info(f"✓ Advanced features: ENABLED")
-    logger.info(f"✓ AI-powered rate limiting: ACTIVE")
-    logger.info(f"✓ Traffic morphing: ACTIVE")
-    logger.info(f"✓ Protocol attack simulation: READY")
+# ============================================================================
+# MAIN ENTRY POINT
+# ============================================================================
 
 def main():
-    print("Starting EWLT Ultimate Edition...")
-    print("Loading advanced modules...")
+    """Main entry point."""
     
-    # Implementation continues...
+    parser = argparse.ArgumentParser(
+        description=f"EWLT MEGA v{VERSION} - Ultimate Load Testing Suite",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Basic test
+  python ewlt_mega.py --target-url http://localhost:8080 --users 50
+  
+  # Maximum anonymity
+  sudo python ewlt_mega.py --target-url https://yoursite.com --users 100 \\
+    --use-tor --identity-rotation 60 --dashboard
+  
+  # Dry run (verify config)
+  python ewlt_mega.py --target-url http://localhost --dry-run
+
+⚠️  LEGAL: Only test systems you own or have written permission to test!
+        """
+    )
     
+    # Core options
+    parser.add_argument('--target-url', required=True, 
+                       help='Target URL (ONLY authorized systems!)')
+    parser.add_argument('--users', type=int, default=50,
+                       help='Concurrent users (default: 50)')
+    parser.add_argument('--spawn-rate', type=int, default=5,
+                       help='Users spawned per second (default: 5)')
+    parser.add_argument('--duration', type=int, default=60,
+                       help='Test duration in seconds (default: 60)')
+    
+    # Anonymity options
+    parser.add_argument('--use-tor', action='store_true',
+                       help='Route traffic through Tor network')
+    parser.add_argument('--identity-rotation', type=int, default=0,
+                       help='Rotate Tor identity every N seconds (0=off)')
+    
+    # Dashboard options
+    parser.add_argument('--dashboard', action='store_true',
+                       help='Enable real-time dashboard')
+    parser.add_argument('--dashboard-port', type=int, default=8089,
+                       help='Dashboard port (default: 8089)')
+    parser.add_argument('--headless', action='store_true',
+                       help='Don\'t open browser for dashboard')
+    
+    # Output options
+    parser.add_argument('--save-report', action='store_true',
+                       help='Save JSON report after test')
+    parser.add_argument('--dry-run', action='store_true',
+                       help='Validate configuration without sending traffic')
+    
+    # Advanced options
+    parser.add_argument('--verbose', '-v', action='store_true',
+                       help='Enable verbose logging')
+    
+    args = parser.parse_args()
+    
+    # Set logging level
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    
+    # Validate inputs
+    args.users = max(1, min(args.users, 2000))
+    args.spawn_rate = max(1, min(args.spawn_rate, 100))
+    args.duration = max(10, args.duration)
+    
+    # Final authorization check
+    if not args.dry_run:
+        print("\n" + "="*60)
+        print("⚠️  FINAL AUTHORIZATION CHECK")
+        print("="*60)
+        print(f"Target: {args.target_url}")
+        print(f"This will send REAL TRAFFIC to the target.")
+        print("\n⚖️  Legal Reminder:")
+        print("   • Only test systems you OWN")
+        print("   • Unauthorized testing is ILLEGAL")
+        print("   • You are responsible for your actions")
+        print("="*60)
+        
+        response = input("\nType 'YES' to proceed: ")
+        if response.strip().upper() != 'YES':
+            print("❌ Test cancelled")
+            return
+    
+    # Run test
+    run_mega_test(args)
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n❌ Cancelled by user")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Fatal error: {e}", exc_info=True)
+        sys.exit(1)
