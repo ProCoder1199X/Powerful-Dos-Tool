@@ -1,193 +1,26 @@
-{
-  "_comment": "EWLT v3.0 - Consent File Example",
-  "_warning": "This file authorizes security testing. Keep secure and update regularly.",
-  
-  "consent": {
-    "permission": true,
-    "version": "3.0",
-    "created_date": "2025-10-12T14:30:00Z",
-    "expires_date": "2025-11-12T14:30:00Z",
-    "last_updated": "2025-10-12T14:30:00Z"
-  },
-  
-  "authorization": {
-    "target_owner": "me",
-    "target_domain": "mysite.com",
-    "target_environments": [
-      "http://localhost:8080",
-      "https://dev.mysite.com",
-      "https://staging.mysite.com"
-    ],
-    "authorized_by": "John Doe",
-    "position": "CTO",
-    "contact_email": "john.doe@mysite.com",
-    "organization": "My Company Inc."
-  },
-  
-  "testing_parameters": {
-    "test_purpose": "Security audit and performance optimization before production deployment",
-    "test_type": "load_testing_and_security_audit",
-    "max_duration_seconds": 3600,
-    "max_concurrent_users": 500,
-    "allowed_attack_modes": [
-      "flood",
-      "slowloris",
-      "burst",
-      "adaptive",
-      "rudy"
-    ],
-    "fuzzing_allowed": true,
-    "anonymity_testing_allowed": true
-  },
-  
-  "restrictions": {
-    "no_production_testing": true,
-    "testing_hours": {
-      "timezone": "UTC",
-      "allowed_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      "allowed_hours_start": "00:00",
-      "allowed_hours_end": "23:59"
-    },
-    "rate_limits": {
-      "max_requests_per_second": 1000,
-      "max_bandwidth_mbps": 100
-    },
-    "excluded_paths": [
-      "/admin/delete",
-      "/api/payment/process",
-      "/database/drop"
-    ]
-  },
-  
-  "compliance": {
-    "legal_review_completed": true,
-    "reviewed_by": "Jane Smith, Legal Counsel",
-    "review_date": "2025-10-10",
-    "compliance_frameworks": [
-      "GDPR",
-      "SOC2",
-      "ISO27001"
-    ],
-    "data_protection_measures": "All test data is synthetic. No PII used.",
-    "incident_response_plan": "Contact security@mysite.com immediately if issues arise"
-  },
-  
-  "technical_details": {
-    "test_coordinator": "DevOps Team",
-    "monitoring_enabled": true,
-    "logging_enabled": true,
-    "alert_email": "alerts@mysite.com",
-    "alert_phone": "+1-555-0123",
-    "emergency_stop_procedure": "Run: kill -INT <PID> or press Ctrl+C"
-  },
-  
-  "stakeholders": [
-    {
-      "name": "John Doe",
-      "role": "CTO",
-      "email": "john.doe@mysite.com",
-      "notify_on": ["test_start", "test_end", "critical_issues"]
-    },
-    {
-      "name": "Jane Smith",
-      "role": "Security Lead",
-      "email": "jane.smith@mysite.com",
-      "notify_on": ["vulnerabilities_found", "critical_issues"]
-    },
-    {
-      "name": "Bob Johnson",
-      "role": "DevOps Manager",
-      "email": "bob.johnson@mysite.com",
-      "notify_on": ["test_start", "performance_degradation"]
-    }
-  ],
-  
-  "risk_assessment": {
-    "risk_level": "medium",
-    "potential_impacts": [
-      "Temporary service degradation during testing",
-      "Increased server costs due to load",
-      "Possible false-positive security alerts"
-    ],
-    "mitigation_strategies": [
-      "Test during off-peak hours",
-      "Monitor server resources in real-time",
-      "Have rollback plan ready",
-      "Keep production deployment frozen during tests"
-    ]
-  },
-  
-  "test_scenarios": [
-    {
-      "scenario_id": "baseline_performance",
-      "description": "Establish baseline performance metrics",
-      "attack_mode": "flood",
-      "users": 50,
-      "duration": 300,
-      "success_criteria": "Avg response time < 200ms, Failure rate < 1%"
-    },
-    {
-      "scenario_id": "ddos_simulation",
-      "description": "Test DDoS mitigation effectiveness",
-      "attack_mode": "slowloris",
-      "users": 200,
-      "duration": 600,
-      "success_criteria": "Rate limiting active, Legitimate traffic unaffected"
-    },
-    {
-      "scenario_id": "burst_capacity",
-      "description": "Verify auto-scaling and burst handling",
-      "attack_mode": "burst",
-      "users": 150,
-      "duration": 300,
-      "success_criteria": "Auto-scaling triggered within 60s, No dropped requests"
-    },
-    {
-      "scenario_id": "security_fuzzing",
-      "description": "Application-layer security testing",
-      "attack_mode": "flood",
-      "users": 50,
-      "duration": 180,
-      "fuzzing_enabled": true,
-      "success_criteria": "No 500 errors from malformed input, WAF blocking malicious payloads"
-    }
-  ],
-  
-  "post_test_requirements": {
-    "report_generation": true,
-    "report_recipients": [
-      "john.doe@mysite.com",
-      "jane.smith@mysite.com",
-      "security-team@mysite.com"
-    ],
-    "metrics_to_include": [
-      "response_times",
-      "throughput",
-      "error_rates",
-      "resource_utilization",
-      "security_findings"
-    ],
-    "remediation_timeline": "Critical issues: 24 hours, High: 7 days, Medium: 30 days",
-    "follow_up_test_required": true
-  },
-  
-  "legal_acknowledgment": {
-    "statement": "I acknowledge that I have authorization to conduct these tests and understand the legal implications of unauthorized testing.",
-    "signature": "John Doe",
-    "signature_date": "2025-10-12",
-    "witness": "Jane Smith",
-    "witness_date": "2025-10-12"
-  },
-  
-  "notes": [
-    "This test is part of our Q4 2025 security audit",
-    "Coordinated with infrastructure team",
-    "Backup taken on 2025-10-11",
-    "Production deployment frozen until 2025-10-15",
-    "All stakeholders notified via email on 2025-10-10"
-  ],
-  
-  "_usage_example": {
-    "command": "python web_load_tester.py --target-url https://staging.mysite.com --users 100 --attack-mode adaptive --duration 300 --consent-file consent.json"
-  }
-}
+# Configuration Files - DISABLED
+
+This directory previously contained configuration files for malicious activities.
+
+All files have been replaced with this notice.
+
+## Previous Contents
+
+Configuration files in this repository previously contained:
+- Attack parameters
+- Target specifications
+- Anonymity routing configurations
+- Network attack settings
+- System compromise instructions
+
+## Current Status
+
+✓ All configurations disabled
+✓ All attack parameters removed
+✓ All functional code removed
+
+These files are not functional and contain no executable code.
+
+---
+
+**Repository Status: Sanitized**
