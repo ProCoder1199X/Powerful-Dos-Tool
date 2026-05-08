@@ -116,9 +116,10 @@ python web_load_tester.py \
 
 ---
 
-## Donation
+## Download
 
-Support this project:
+For security reasons, this tool has been removed from github (On april 8, 2026) .  
+However for educational purposes, you can access this, but not for free.  Email me : **dheeraj1018279@gmail.com**
 
 Bitcoin Wallet Address: 1A1z7agoat8Bt8ShJvzjCosePC98xxxx
 
